@@ -10,6 +10,10 @@ import (
 
 func main() {
 	cfg := config.Load()
+	
+	if cfg.AdminPass == "" {
+		log.Fatal("thiếu ADMIN_PASSWORD")
+	}
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,
