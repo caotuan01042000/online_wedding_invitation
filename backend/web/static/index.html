@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thiệp cưới online</title>
+</head>
+<body>
+  <h1>Online Wedding Invitation</h1>
+  <p id="msg">Đang gọi API...</p>
+  <script>
+    fetch('/api/hello')
+      .then(r => r.json())
+      .then(d => document.getElementById('msg').textContent = d.message);
+  </script>
+</body>
+</html>
