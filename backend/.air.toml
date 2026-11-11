@@ -7,3 +7,5 @@ tmp_dir = "tmp"
   include_ext = ["go", "html", "css", "js"]
   exclude_dir = ["tmp", "bin", ".git"]
   delay = 300
+  poll = true
+  poll_interval = 500
