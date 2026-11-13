@@ -30,10 +30,10 @@ func main() {
 	}
 	defer pool.Close()
 
-	// 1. migrate trước
-	if err := db.Migrate(ctx, pool); err != nil {
-		log.Fatal("migrate: ", err)
-	}
+	// // 1. migrate trước
+	// if err := db.Migrate(ctx, pool); err != nil {
+	// 	log.Fatal("migrate: ", err)
+	// }
 
 	// 2. rồi mới seed admin
 	st := store.New(pool)

@@ -38,7 +38,7 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<10)
 	var req loginReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "dữ liệu không hợp lệ"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "data input invalid"})
 		return
 	}
 
