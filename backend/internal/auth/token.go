@@ -8,16 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
 
 const CookieName = "token"
-
-type Claims struct {
-	Sub string `json:"sub"`
-	Exp int64  `json:"exp"`
-}
 
 var header = base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
 
@@ -27,8 +23,8 @@ func mac(secret []byte, msg string) string {
 	return base64.RawURLEncoding.EncodeToString(m.Sum(nil))
 }
 
-func Sign(secret []byte, sub string, ttl time.Duration) (string, error) {
-	p, err := json.Marshal(Claims{Sub: sub, Role: role, Exp: time.Now().Add(ttl	).Unix()})
+func Sign(secret []byte, sub, role string, ttl time.Duration) (string, error) {
+  	p, err := json.Marshal(Claims{Sub: sub, Role: role, Exp: time.Now().Add(ttl).Unix()})
 	if err != nil {
 		return "", err
 	}
@@ -89,8 +85,10 @@ func ClaimsFrom(ctx context.Context) *Claims {
 }
 
 func UserFrom(ctx context.Context) string {
-	s, _ := ctx.Value(ctxKey{}).(string)
-	return s
+	if c := ClaimsFrom(ctx); c != nil {
+		return c.Sub
+	}
+	return ""
 }
 
 func unauthorized(w http.ResponseWriter) {

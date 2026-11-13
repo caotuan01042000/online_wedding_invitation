@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"time"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -40,6 +41,9 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 	for _, e := range entries {
+		if !strings.HasSuffix(e.Name(), ".up.sql") {
+		continue
+	}
 		var done bool
 		if err := pool.QueryRow(ctx,
 			`SELECT EXISTS (SELECT 1 FROM tbl_schema_migrations WHERE version = $1)`, e.Name()).Scan(&done); err != nil {

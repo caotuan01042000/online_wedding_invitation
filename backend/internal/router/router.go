@@ -6,10 +6,12 @@ import (
 
 	"online-wedding-invitation/internal/auth"
 	"online-wedding-invitation/internal/config"
+	store "online-wedding-invitation/internal/domain/user"
 	"online-wedding-invitation/internal/handler"
+
 )
 
-func New(cfg *config.Config) http.Handler {
+func New(cfg *config.Config, st *store.Store) http.Handler {
 	mux := http.NewServeMux()
 	secret := []byte(cfg.JWTSecret)
 

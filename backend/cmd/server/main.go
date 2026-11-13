@@ -9,7 +9,7 @@ import (
 	"online-wedding-invitation/internal/config"
 	"online-wedding-invitation/internal/db"
 	"online-wedding-invitation/internal/router"
-	"online-wedding-invitation/internal/store"
+	store "online-wedding-invitation/internal/domain/user"
 )
 
 func main() {
