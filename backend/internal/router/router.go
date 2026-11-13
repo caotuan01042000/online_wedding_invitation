@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourname/online-wedding-invitation/internal/auth"
-	"github.com/yourname/online-wedding-invitation/internal/config"
-	"github.com/yourname/online-wedding-invitation/internal/handler"
+	"online-wedding-invitation/internal/auth"
+	"online-wedding-invitation/internal/config"
+	"online-wedding-invitation/internal/handler"
 )
 
 func New(cfg *config.Config) http.Handler {
@@ -14,8 +14,7 @@ func New(cfg *config.Config) http.Handler {
 	secret := []byte(cfg.JWTSecret)
 
 	a := &handler.Auth{
-		User:   cfg.AdminUser,
-		Pass:   cfg.AdminPass,
+		Store:  st,
 		Secret: secret,
 		Secure: cfg.CookieSecure,
 		TTL:    24 * time.Hour,

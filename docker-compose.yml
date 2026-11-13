@@ -4,8 +4,16 @@ services:
     container_name: wedding-invitation-backend
     environment:
       - PORT=8080
+      - DATABASE_URL=postgres://${DB_USER:-wedding}:${DB_PASSWORD}@db:5432/${DB_NAME:-wedding}?sslmode=disable
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@wedding.local}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
     restart: unless-stopped
-
+  depends_on:
+      db:
+        condition: service_healthy
   frontend:
     build:
       context: ./frontend

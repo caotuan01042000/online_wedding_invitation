@@ -1,20 +1,23 @@
 package handler
 
 import (
-	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/yourname/online-wedding-invitation/internal/auth"
+	"golang.org/x/crypto/bcrypt"
+
+	"online-wedding-invitation/internal/auth"
+	"online-wedding-invitation/internal/domain/user"
 )
 
 type Auth struct {
-	User, Pass string
-	Secret     []byte
-	Secure     bool
-	TTL        time.Duration
+	Store  *store.Store
+	Secret []byte
+	Secure bool
+	TTL    time.Duration
 }
 
 type loginReq struct {
@@ -22,10 +25,8 @@ type loginReq struct {
 	Password string `json:"password"`
 }
 
-func eq(a, b string) bool {
-	ha, hb := sha256.Sum256([]byte(a)), sha256.Sum256([]byte(b))
-	return subtle.ConstantTimeCompare(ha[:], hb[:]) == 1
-}
+// Hash giả để so sánh khi user không tồn tại, tránh lộ "user có tồn tại hay không" qua thời gian phản hồi.
+var dummyHash, _ = bcrypt.GenerateFromPassword([]byte("dummy-password"), bcrypt.DefaultCost)
 
 func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -41,18 +42,29 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	okUser, okPass := eq(req.Username, h.User), eq(req.Password, h.Pass)
-	if !(okUser && okPass) {
-		time.Sleep(500 * time.Millisecond) // làm chậm dò mật khẩu
+	u, err := h.Store.FindByUsername(r.Context(), strings.TrimSpace(req.Username))
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "lỗi hệ thống"})
+		return
+	}
+
+	hash := dummyHash
+	if u != nil {
+		hash = []byte(u.PasswordHash)
+	}
+	okPass := bcrypt.CompareHashAndPassword(hash, []byte(req.Password)) == nil
+	if u == nil || !okPass || !u.IsActive {
+		time.Sleep(500 * time.Millisecond)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "sai tài khoản hoặc mật khẩu"})
 		return
 	}
 
-	token, err := auth.Sign(h.Secret, h.User, h.TTL)
+	token, err := auth.Sign(h.Secret, u.ID, u.Role, h.TTL)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "lỗi hệ thống"})
 		return
 	}
+	h.Store.TouchLogin(r.Context(), u.ID)
 	http.SetCookie(w, &http.Cookie{
 		Name:     auth.CookieName,
 		Value:    token,
@@ -62,7 +74,7 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		Secure:   h.Secure,
 		SameSite: http.SameSiteLaxMode,
 	})
-	writeJSON(w, http.StatusOK, map[string]string{"username": h.User})
+	writeJSON(w, http.StatusOK, u)
 }
 
 func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +85,13 @@ func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "đã đăng xuất"})
 }
 
+// Me đọc lại từ DB nên user bị khóa/xóa sẽ mất phiên ngay.
 func (h *Auth) Me(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"username": auth.UserFrom(r.Context())})
+	c := auth.ClaimsFrom(r.Context())
+	u, err := h.Store.FindByID(r.Context(), c.Sub)
+	if err != nil || !u.IsActive {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "chưa đăng nhập"})
+		return
+	}
+	writeJSON(w, http.StatusOK, u)
 }

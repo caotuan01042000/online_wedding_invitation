@@ -5,6 +5,15 @@ services:
     command: sh -c "go install github.com/air-verse/air@v1.52.3 && air -c .air.toml"
     environment:
       - PORT=8080
+      - DATABASE_URL=postgres://${DB_USER:-wedding}:${DB_PASSWORD}@db:5432/${DB_NAME:-wedding}?sslmode=disable
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@wedding.local}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8080:8080"
     volumes:
@@ -31,6 +40,38 @@ services:
     depends_on:
       - backend
 
+  db:
+    image: postgres:16-alpine
+    container_name: wedding-invitation-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-wedding}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-wedding}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-wedding} -d ${DB_NAME:-wedding}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    image: migrate/migrate:v4.17.1
+    profiles: ["tools"]
+    entrypoint:
+      - migrate
+      - -path=/migrations
+      - -database=postgres://${DB_USER:-wedding}:${DB_PASSWORD}@db:5432/${DB_NAME:-wedding}?sslmode=disable
+    volumes:
+      - ./backend/internal/db/migrations:/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   go-mod-cache:
   frontend-node-modules:
+  pgdata:

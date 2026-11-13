@@ -28,7 +28,7 @@ func mac(secret []byte, msg string) string {
 }
 
 func Sign(secret []byte, sub string, ttl time.Duration) (string, error) {
-	p, err := json.Marshal(Claims{Sub: sub, Exp: time.Now().Add(ttl).Unix()})
+	p, err := json.Marshal(Claims{Sub: sub, Role: role, Exp: time.Now().Add(ttl	).Unix()})
 	if err != nil {
 		return "", err
 	}
@@ -60,8 +60,8 @@ func Verify(secret []byte, token string) (*Claims, error) {
 
 type ctxKey struct{}
 
-// Require: middleware bảo vệ route, yêu cầu cookie token hợp lệ.
-func Require(secret []byte, next http.HandlerFunc) http.HandlerFunc {
+// Require: bắt buộc cookie hợp lệ. Truyền role để giới hạn theo vai trò (bỏ trống = mọi role).
+func Require(secret []byte, next http.HandlerFunc, roles ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ck, err := r.Cookie(CookieName)
 		if err != nil {
@@ -73,8 +73,19 @@ func Require(secret []byte, next http.HandlerFunc) http.HandlerFunc {
 			unauthorized(w)
 			return
 		}
-		next(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, claims.Sub)))
+		if len(roles) > 0 && !slices.Contains(roles, claims.Role) {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "không đủ quyền"})
+			return
+		}
+		next(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, claims)))
 	}
+}
+
+func ClaimsFrom(ctx context.Context) *Claims {
+	c, _ := ctx.Value(ctxKey{}).(*Claims)
+	return c
 }
 
 func UserFrom(ctx context.Context) string {
@@ -86,4 +97,10 @@ func unauthorized(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusUnauthorized)
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": "chưa đăng nhập"})
+}
+
+type Claims struct {
+	Sub  string `json:"sub"`
+	Role string `json:"role"`
+	Exp  int64  `json:"exp"`
 }

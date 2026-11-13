@@ -9,7 +9,9 @@ import (
 
 type Config struct {
 	Port         string
+	DatabaseURL  string
 	AdminUser    string
+	AdminEmail   string
 	AdminPass    string
 	JWTSecret    string
 	CookieSecure bool
@@ -18,7 +20,9 @@ type Config struct {
 func Load() *Config {
 	c := &Config{
 		Port:         get("PORT", "8080"),
+		DatabaseURL:  os.Getenv("DATABASE_URL"),
 		AdminUser:    get("ADMIN_USER", "admin"),
+		AdminEmail:   get("ADMIN_EMAIL", "admin@wedding.local"),
 		AdminPass:    os.Getenv("ADMIN_PASSWORD"),
 		JWTSecret:    os.Getenv("JWT_SECRET"),
 		CookieSecure: os.Getenv("COOKIE_SECURE") == "true",
