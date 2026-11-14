@@ -1,35 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { api, type Paged } from "@/lib/api";
 
-export default function AdminPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<string | null>(null);
+export default function AdminHome() {
+  const [stats, setStats] = useState<{ users: number; templates: number } | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (r) => {
-        if (!r.ok) return router.replace("/login");
-        const d = await r.json();
-        setUser(d.username);
-      })
-      .catch(() => router.replace("/login"));
-  }, [router]);
-
-  const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
-  };
-
-  if (!user) return <p style={{ padding: 24 }}>Đang kiểm tra phiên đăng nhập...</p>;
+    Promise.all([
+      api<Paged<unknown>>("/api/admin/users?page_size=1"),
+      api<{ items: unknown[] }>("/api/admin/templates"),
+    ])
+      .then(([u, t]) => setStats({ users: u.total, templates: t.items.length }))
+      .catch(() => {});
+  }, []);
 
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
-      <h1>Trang quản trị</h1>
-      <p>Xin chào, {user}</p>
-      <button onClick={logout}>Đăng xuất</button>
-      {/* TODO: danh sách RSVP, lời chúc */}
-    </main>
+    <>
+      <h1>Tổng quan</h1>
+      <div className="grid">
+        <div className="card stat"><p>Người dùng</p><b>{stats?.users ?? "–"}</b></div>
+        <div className="card stat"><p>Mẫu thiệp</p><b>{stats?.templates ?? "–"}</b></div>
+      </div>
+    </>
   );
 }

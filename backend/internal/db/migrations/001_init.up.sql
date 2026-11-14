@@ -121,25 +121,3 @@ CREATE TRIGGER trg_invitations_upd
 BEFORE UPDATE ON tbl_invitations
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-
--- ===== Dữ liệu khởi tạo =====
-INSERT INTO tbl_roles (code, name, description) VALUES
-  ('admin', 'Quản trị viên', 'Toàn quyền hệ thống'),
-  ('user',  'Người dùng',    'Quản lý thiệp của chính mình');
-
-INSERT INTO tbl_permissions (code, description) VALUES
-  ('users:manage',       'Quản lý người dùng'),
-  ('templates:manage',   'Quản lý mẫu thiệp'),
-  ('invitations:manage', 'Quản lý mọi thiệp'),
-  ('invitations:own',    'Quản lý thiệp của chính mình');
-
-INSERT INTO tbl_role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM tbl_roles r, tbl_permissions p WHERE r.code = 'admin';
-
-INSERT INTO tbl_role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM tbl_roles r, tbl_permissions p
-WHERE r.code = 'user' AND p.code = 'invitations:own';
-
-INSERT INTO tbl_templates (code, name, description) VALUES
-  ('rose',     'Hồng phấn',     'Mẫu hồng phấn, nhẹ nhàng'),
-  ('dragon',   'Rồng phượng',   'Mẫu truyền thống, nền tối');

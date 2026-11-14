@@ -14,6 +14,8 @@ import (
 	"online-wedding-invitation/internal/db"
 	"online-wedding-invitation/internal/domain/user"
 	"online-wedding-invitation/internal/router"
+	"online-wedding-invitation/internal/domain/template"
+
 )
 
 func main() {
@@ -37,13 +39,15 @@ func run(cfg *config.Config) error {
 	defer pool.Close()
 
 	users := user.New(pool)
+	templates := template.New(pool)
+
 	if err := users.EnsureAdmin(startCtx, cfg.AdminUser, cfg.AdminEmail, cfg.AdminPass); err != nil {
 		return err
 	}
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           router.New(cfg, users),
+		Handler:           router.New(cfg, users, templates),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
