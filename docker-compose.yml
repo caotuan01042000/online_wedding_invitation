@@ -53,6 +53,8 @@ services:
       args:
         BACKEND_URL: http://backend:8080
     container_name: wedding-invitation-frontend
+    environment:
+      - BACKEND_URL=http://backend:8080
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
