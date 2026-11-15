@@ -33,7 +33,7 @@ export async function proxy(req: NextRequest) {
 
   if (pathname.startsWith("/admin") && user.role !== "admin") {
     const url = req.nextUrl.clone();
-    url.pathname = "/template";
+    url.pathname = "/home";   // trước đây là /template
     url.search = "";
     return NextResponse.redirect(url);
   }
@@ -41,5 +41,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/template/:path*", "/admin/:path*"],
+  matcher: ["/home/:path*", "/template/:path*", "/admin/:path*"],
 };

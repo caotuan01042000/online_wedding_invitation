@@ -5,7 +5,7 @@ export function safeNext(): string | null {
 }
 
 export function homeFor(role?: string): string {
-  return role === "admin" ? "/admin" : "/template";
+  return role === "admin" ? "/admin" : "/home";
 }
 
 // Where to go after login/register: honor ?next= only when it fits the role.
