@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { homeFor, safeNext } from "@/lib/auth";
+import { landing } from "@/lib/auth";            
 import "../auth.css";
 
 export default function LoginPage() {
@@ -19,7 +19,8 @@ export default function LoginPage() {
       .then(async (r) => {
         if (!r.ok) return;
         const u = await r.json();
-        router.replace(safeNext() ?? homeFor(u.role));
+        router.replace(landing(u.role));
+
       })
       .catch(() => {});
   }, [router]);
@@ -36,7 +37,7 @@ export default function LoginPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại");
-      router.replace(safeNext() ?? homeFor(data.role));
+      router.replace(landing(data.role));
     } catch (ex) {
       setError(ex instanceof Error ? ex.message : "Có lỗi xảy ra");
     } finally {

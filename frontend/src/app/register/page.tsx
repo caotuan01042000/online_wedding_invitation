@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { homeFor, safeNext } from "@/lib/auth";
+import { landing } from "@/lib/auth";            
 import "../auth.css";
 
 type Fields = Partial<Record<"username" | "email" | "password" | "full_name" | "confirm", string>>;
@@ -49,8 +49,7 @@ export default function RegisterPage() {
       const data = await res.json().catch(() => ({}));
       if (res.status === 422 && data.fields) setFields(data.fields); // server-side field errors
       if (!res.ok) throw new Error(data.error || "Đăng ký thất bại");
-      router.replace(safeNext() ?? homeFor(data.role)); // backend already set the login cookie
-    } catch (ex) {
+      router.replace(landing(data.role));    } catch (ex) {
       setError(ex instanceof Error ? ex.message : "Có lỗi xảy ra");
     } finally {
       setLoading(false);
