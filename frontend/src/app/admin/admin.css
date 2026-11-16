@@ -321,3 +321,10 @@
         padding: 20px 16px
     }
 }
+
+.ad a.b{display:inline-block;text-decoration:none}
+.ad .two{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.ad .rowi{display:grid;grid-template-columns:110px 1fr auto;gap:8px;margin-bottom:8px}
+.ad .rowg{display:grid;grid-template-columns:110px 1fr 1fr 1fr auto;gap:8px;margin-bottom:8px}
+.ad .sec{margin-bottom:16px}
+@media (max-width:760px){.ad .two,.ad .rowi,.ad .rowg{grid-template-columns:1fr}}

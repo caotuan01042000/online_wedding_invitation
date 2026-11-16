@@ -9,6 +9,7 @@ const MENU = [
   { href: "/admin", label: "Tổng quan", exact: true },
   { href: "/admin/users", label: "Người dùng" },
   { href: "/admin/templates", label: "Mẫu thiệp" },
+  { href: "/admin/invitations", label: "Thiệp cưới" },
   // Phase 2: { href: "/admin/invitations", label: "Thiệp cưới" },
 ];
 

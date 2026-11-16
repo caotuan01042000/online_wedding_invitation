@@ -47,5 +47,10 @@ func registerAdminRoutes(mux *http.ServeMux, secret []byte, users handler.UserSt
 	mux.HandleFunc("PATCH /api/admin/templates/{id}", admin(h.UpdateTemplate))
 	mux.HandleFunc("DELETE /api/admin/templates/{id}", admin(h.DeleteTemplate))
 
+		// invitations
+	mux.HandleFunc("GET /api/admin/invitations", admin(h.ListInvitations))
+	mux.HandleFunc("POST /api/admin/invitations", admin(h.CreateInvitation))
+	mux.HandleFunc("GET /api/admin/invitations/{id}/render", admin(h.RenderInvitation))
 	// Phase 2: invitations, media, rsvps, wishes
+	
 }

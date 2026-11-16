@@ -15,7 +15,8 @@ func New(cfg *config.Config, users *user.Store, templates *template.Store) http.
 	mux := http.NewServeMux()
 
 	authH := &handler.Auth{Store: users, Secret: secret, Secure: cfg.CookieSecure, TTL: cfg.TokenTTL}
-	adminH := &handler.Admin{Users: users, Templates: templates}
+	adminH := &handler.Admin{Users: users, Templates: templates, Invitations: invitations}
+	
 
 	registerSystemRoutes(mux)
 	registerAuthRoutes(mux, authH, secret)

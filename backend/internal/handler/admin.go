@@ -32,6 +32,18 @@ type Admin struct {
 	Templates TemplateStore
 }
 
+type InvitationStore interface {
+	Create(ctx context.Context, createdBy string, c invitation.Content) (string, error)
+	List(ctx context.Context, f invitation.ListFilter) ([]invitation.Summary, int, error)
+	RenderByID(ctx context.Context, id string) (*invitation.Render, error)
+}
+
+type Admin struct {
+	Users       AdminUserStore
+	Templates   TemplateStore
+	Invitations InvitationStore
+}
+
 func writeFields(w http.ResponseWriter, fields map[string]string) {
 	writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "dữ liệu không hợp lệ", "fields": fields})
 }

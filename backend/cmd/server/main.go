@@ -40,6 +40,8 @@ func run(cfg *config.Config) error {
 
 	users := user.New(pool)
 	templates := template.New(pool)
+	invitations := invitation.New(pool)
+
 
 	if err := users.EnsureAdmin(startCtx, cfg.AdminUser, cfg.AdminEmail, cfg.AdminPass); err != nil {
 		return err
@@ -47,7 +49,7 @@ func run(cfg *config.Config) error {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           router.New(cfg, users, templates),
+		Handler: router.New(cfg, users, templates, invitations),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,

@@ -31,7 +31,7 @@ export async function proxy(req: NextRequest) {
     return new NextResponse("Dịch vụ tạm thời không khả dụng", { status: 503 });
   }
 
-  if (pathname.startsWith("/admin") && user.role !== "admin") {
+    if ((pathname.startsWith("/admin") || pathname.startsWith("/preview")) && user.role !== "admin") {
     const url = req.nextUrl.clone();
     url.pathname = "/home";   // trước đây là /template
     url.search = "";
@@ -41,5 +41,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/home/:path*", "/template/:path*", "/admin/:path*"],
+  matcher: ["/home/:path*", "/template/:path*", "/admin/:path*", "/preview/:path*"],
 };
