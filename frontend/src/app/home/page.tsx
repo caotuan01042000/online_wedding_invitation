@@ -13,11 +13,11 @@ interface Me { username: string; full_name: string | null; role: "admin" | "user
 
 // Mẫu thật (ready) trỏ tới trang xem thử. Sau này thay bằng API công khai /api/public/templates.
 const TEMPLATES = [
-  { code: "rose", name: "Hồng phấn", a: "#FDEEF2", b: "#E8668B", href: "/", ready: true },
-  { code: "dragon", name: "Rồng phượng", a: "#4A1B2D", b: "#F2B8C6", href: "/template", ready: true },
-  { code: "green", name: "Song Hỷ - Xanh", a: "#18281A", b: "#E8D3A0", href: "", ready: false },
-  { code: "cream", name: "Tối giản - Nâu", a: "#F4EBDD", b: "#B08968", href: "", ready: false },
-  { code: "peony", name: "Mẫu đơn", a: "#FFE3EA", b: "#C2185B", href: "", ready: false },
+  { code: "rose", name: "Hồng phấn", a: "#2a0a1a", b: "#ff2d95", href: "/", ready: true },
+  { code: "dragon", name: "Rồng phượng", a: "#000000", b: "#c2185b", href: "/template", ready: true },
+  { code: "green", name: "Song Hỷ - Hồng", a: "#0a0a0a", b: "#ff7ab8", href: "", ready: false },
+  { code: "cream", name: "Tối giản - Đen", a: "#111111", b: "#ff9ccd", href: "", ready: false },
+  { code: "peony", name: "Mẫu đơn", a: "#1a0612", b: "#ff2d95", href: "", ready: false },
 ];
 
 const STEPS = [

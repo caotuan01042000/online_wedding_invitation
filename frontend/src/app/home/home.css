@@ -113,3 +113,52 @@
   .hm .cf .s{width:210px;height:360px;margin-left:-105px}
   .hm .cf{height:410px}
 }
+
+
+/* ===== Theme: đen + hồng ===== */
+.hm{--bg:#050505;--bg2:#000;--card:#111;--pk:#ff2d95;--pk2:#ff7ab8;--txt:#fafafa;--dim:#a1a1aa}
+.hm .pk{color:var(--pk);text-shadow:0 0 24px rgba(255,45,149,.45)}
+
+/* header */
+.hm .top{background:rgba(0,0,0,.85);border-bottom:1px solid rgba(255,45,149,.18)}
+.hm .mark{background:linear-gradient(135deg,var(--pk),var(--pk2));box-shadow:0 0 18px rgba(255,45,149,.55)}
+.hm .top nav a:hover{color:var(--pk2)}
+
+/* nút */
+.hm .btn{background:linear-gradient(135deg,var(--pk),#ff5fae);border-color:transparent}
+.hm .btn.ghost{background:none;border:1px solid var(--pk);color:var(--pk2)}
+.hm .btn.ghost:hover{background:rgba(255,45,149,.12)}
+.hm .btn.lg{box-shadow:0 0 36px -6px rgba(255,45,149,.7)}
+
+/* hero: nền đen có quầng sáng hồng */
+.hm .hero{position:relative}
+.hm .hero:before{content:"";position:absolute;inset:-40px 0 auto 40%;height:520px;background:radial-gradient(closest-side,rgba(255,45,149,.22),transparent);pointer-events:none}
+.hm .hero>*{position:relative}
+.hm .quote{color:var(--pk2)}
+
+/* điện thoại minh họa: đen viền hồng */
+.hm .phone{border-color:#2a2a2a;background:linear-gradient(170deg,#0d0d0d,#1a0612);box-shadow:0 0 50px -10px rgba(255,45,149,.55),0 30px 60px -20px #000}
+.hm .p2{background:linear-gradient(170deg,#12040b,#2a0a1d)}
+.hm .phone i{background:linear-gradient(160deg,#ff2d95,#ff9ccd)}
+.hm .phone b{background:rgba(255,255,255,.85)}
+.hm .phone em{background:rgba(255,45,149,.6)}
+
+/* section */
+.hm .sec.dark{background:var(--bg2)}
+.hm .badge{border-color:rgba(255,45,149,.6);background:rgba(255,45,149,.08)}
+.hm .ic{background:linear-gradient(135deg,var(--pk),var(--pk2));box-shadow:0 0 22px rgba(255,45,149,.5)}
+.hm .steps:before{background:rgba(255,45,149,.45)}
+.hm .ticks li:before{background:rgba(255,45,149,.18);color:var(--pk2)}
+
+/* carousel */
+.hm .cf .s{box-shadow:0 0 40px -12px rgba(255,45,149,.45),0 30px 60px -25px #000;border:1px solid rgba(255,45,149,.25)}
+.hm .nv{background:var(--pk);color:#fff;box-shadow:0 0 20px rgba(255,45,149,.6)}
+.hm .dots button{background:rgba(255,255,255,.2)}
+
+/* thẻ thống kê, FAQ, footer */
+.hm .stat{background:var(--card);border:1px solid rgba(255,45,149,.3);box-shadow:0 0 60px -20px rgba(255,45,149,.45)}
+.hm .bar i{background:linear-gradient(90deg,var(--pk),var(--pk2))}
+.hm .faq{border-color:rgba(255,45,149,.25);background:var(--card)}
+.hm .faq details{border-bottom-color:rgba(255,255,255,.07)}
+.hm .faq summary:after{color:var(--pk)}
+.hm .foot{background:#000;border-top:1px solid rgba(255,45,149,.25)}
