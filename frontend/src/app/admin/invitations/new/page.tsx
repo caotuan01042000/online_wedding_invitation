@@ -7,6 +7,12 @@ import Field from "@/components/admin/Field";
 
 interface Tpl { id: string; code: string; name: string }
 
+interface WeddingImage {
+  id: string;
+  file: File;
+  preview: string;
+}
+
 const newPerson = () => ({ short_name: "", full_name: "", rank: "", father: "", mother: "", address: "" });
 type PersonState = ReturnType<typeof newPerson>;
 type Errors = Record<string, string>;
@@ -47,6 +53,38 @@ export default function NewInvitationPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<{ id: string; slug: string } | null>(null);
+
+  const [weddingImages, setWeddingImages] = useState<WeddingImage[]>([]);
+
+  const handleWeddingImages = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(e.target.files || []);
+
+    const newImages: WeddingImage[] = files
+      .filter((file) => file.type.startsWith("image/"))
+      .map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+
+    setWeddingImages((prev) => [...prev, ...newImages]);
+
+    e.target.value = "";
+  };
+
+  const removeWeddingImage = (id: string) => {
+    setWeddingImages((prev) => {
+      const image = prev.find((item) => item.id === id);
+
+      if (image) {
+        URL.revokeObjectURL(image.preview);
+      }
+
+      return prev.filter((item) => item.id !== id);
+    });
+  };
 
   useEffect(() => {
     api<{ items: Tpl[] }>("/api/admin/templates?is_active=true")
@@ -139,7 +177,35 @@ export default function NewInvitationPage() {
         </div>
 
         <div className="card sec">
-          <h3>5. Lịch trình</h3>
+          {/* Upload nhiều ảnh cưới */}
+          <div className="wedding-upload">
+            <h3>5. Ảnh cưới</h3>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleWeddingImages}
+            />
+
+            <div className="wedding-preview">
+              {weddingImages.map((image, index) => (
+                <div className="wedding-preview-item" key={image.id}>
+                  <img src={image.preview} alt={`Ảnh cưới ${index + 1}`} />
+
+                  <button
+                    type="button"
+                    onClick={() => removeWeddingImage(image.id)}
+                  >
+                    Xóa
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="card sec">
+          <h3>6. Lịch trình</h3>
           {fields.schedule && <span className="fe">{fields.schedule}</span>}
           {schedule.map((s, i) => (
             <div className="rowi" key={i}>
@@ -152,7 +218,7 @@ export default function NewInvitationPage() {
         </div>
 
         <div className="card sec">
-          <h3>6. Quà mừng (không bắt buộc)</h3>
+          <h3>7. Quà mừng (không bắt buộc)</h3>
           {fields.gifts && <span className="fe">{fields.gifts}</span>}
           {gifts.map((g, i) => {
             const up = (k: keyof typeof g) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>

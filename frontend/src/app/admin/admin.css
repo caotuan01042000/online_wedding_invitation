@@ -328,3 +328,39 @@
 .ad .rowg{display:grid;grid-template-columns:110px 1fr 1fr 1fr auto;gap:8px;margin-bottom:8px}
 .ad .sec{margin-bottom:16px}
 @media (max-width:760px){.ad .two,.ad .rowi,.ad .rowg{grid-template-columns:1fr}}
+
+
+
+
+.wedding-upload {
+  margin-top: 24px;
+}
+
+.upload-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.wedding-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.wedding-preview-item {
+  position: relative;
+}
+
+.wedding-preview-item img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.wedding-preview-item button {
+  margin-top: 5px;
+  cursor: pointer;
+}
