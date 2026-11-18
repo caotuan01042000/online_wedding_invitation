@@ -15,7 +15,7 @@ import (
 	"online-wedding-invitation/internal/domain/user"
 	"online-wedding-invitation/internal/router"
 	"online-wedding-invitation/internal/domain/template"
-
+	"online-wedding-invitation/internal/domain/invitation"
 )
 
 func main() {

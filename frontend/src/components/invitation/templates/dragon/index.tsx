@@ -264,7 +264,7 @@ export default function DragonTemplate({ data }: TemplateProps) {
           <h2 className="h up">Thông tin lễ cưới</h2>
           <div className="pr">
             {[W.groom, W.bride].map((p) => (
-              <div key={p.full}>
+              <div key={p.full ?? ""}>
                 <p className="dim up" style={{ fontSize: 15 }}>Ông bà</p>
                 {p.parents.map((x) => <p key={x}>{x.replace(/^(Ông|Bà) /, "")}</p>)}
                 <small>{p.addr}</small>

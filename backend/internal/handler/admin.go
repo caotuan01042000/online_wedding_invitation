@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"online-wedding-invitation/internal/domain/invitation"
 	"online-wedding-invitation/internal/domain/template"
 	"online-wedding-invitation/internal/domain/user"
 )
-
 // AdminUserStore is everything the admin user handlers need (easy to mock in tests).
 type AdminUserStore interface {
 	List(ctx context.Context, f user.ListFilter) ([]user.User, int, error)
@@ -26,11 +26,6 @@ type TemplateStore interface {
 	Delete(ctx context.Context, id string) error
 }
 
-// Admin groups all /api/admin/* handlers. Later: Invitations, Media, ...
-type Admin struct {
-	Users     AdminUserStore
-	Templates TemplateStore
-}
 
 type InvitationStore interface {
 	Create(ctx context.Context, createdBy string, c invitation.Content) (string, error)
