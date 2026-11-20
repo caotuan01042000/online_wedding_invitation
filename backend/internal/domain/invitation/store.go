@@ -15,6 +15,7 @@ var (
 	ErrNotFound     = errors.New("không tìm thấy thiệp")
 	ErrSlugTaken    = errors.New("slug đã được sử dụng")
 	ErrBadReference = errors.New("template hoặc chủ thiệp không tồn tại")
+	ErrBadMedia     = errors.New("ảnh QR không tồn tại hoặc không thuộc thiệp này")
 )
 
 // Vietnam has no DST, so a fixed offset is enough (and works without tzdata on alpine).
@@ -34,24 +35,22 @@ func pgCode(err error) string {
 	return ""
 }
 
-// mapErr turns common Postgres errors into domain errors.
 func mapErr(err error) error {
 	switch pgCode(err) {
-	case "23505": // unique_violation (slug)
+	case "23505":
 		return ErrSlugTaken
-	case "23503", "22P02": // foreign_key_violation, malformed uuid
+	case "23503", "22P02":
 		return ErrBadReference
 	}
 	return err
 }
 
-// Create inserts the invitation and all of its child rows in one transaction.
 func (s *Store) Create(ctx context.Context, createdBy string, c Content) (string, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return "", err
 	}
-	defer tx.Rollback(ctx) // no-op after a successful Commit
+	defer tx.Rollback(ctx)
 
 	var id string
 	err = tx.QueryRow(ctx, `
@@ -69,6 +68,70 @@ func (s *Store) Create(ctx context.Context, createdBy string, c Content) (string
 		return "", err
 	}
 	return id, nil
+}
+
+// Replace overwrites the content of an existing invitation (PUT semantics) in one transaction.
+// Status and uploaded media are NOT touched. An empty UserID keeps the current owner.
+func (s *Store) Replace(ctx context.Context, id string, c Content) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE tbl_invitations
+		SET user_id = COALESCE(NULLIF($2::text, '')::uuid, user_id),
+		    template_id = $3::uuid, slug = $4, title = $5, data = $6
+		WHERE id = $1::uuid`,
+		id, c.UserID, c.TemplateID, c.Slug, c.Title, c.Settings)
+	if err != nil {
+		if pgCode(err) == "22P02" && !isUUIDLike(id) {
+			return ErrNotFound
+		}
+		return mapErr(err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	for _, table := range []string{"tbl_wedding_people", "tbl_wedding_infos", "tbl_wedding_schedules", "tbl_wedding_gifts"} {
+		if _, err := tx.Exec(ctx, `DELETE FROM `+table+` WHERE invitation_id = $1::uuid`, id); err != nil {
+			return err
+		}
+	}
+	if err := writeChildren(ctx, tx, id, c); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func isUUIDLike(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i, r := range s {
+		switch {
+		case i == 8 || i == 13 || i == 18 || i == 23:
+			if r != '-' {
+				return false
+			}
+		case !(r >= '0' && r <= '9' || r >= 'a' && r <= 'f' || r >= 'A' && r <= 'F'):
+			return false
+		}
+	}
+	return true
+}
+
+func qrID(g Gift) *string {
+	if g.QRMediaID == nil {
+		return nil
+	}
+	v := strings.ToLower(strings.TrimSpace(*g.QRMediaID))
+	if v == "" {
+		return nil
+	}
+	return &v
 }
 
 func writeChildren(ctx context.Context, tx pgx.Tx, id string, c Content) error {
@@ -94,18 +157,41 @@ func writeChildren(ctx context.Context, tx pgx.Tx, id string, c Content) error {
 	}
 
 	for i, sc := range c.Schedule {
-		// ::text::time keeps the parameter a plain string for pgx.
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO tbl_wedding_schedules (invitation_id, at_time, title, sort_order)
 			VALUES ($1::uuid, $2::text::time, $3, $4)`, id, sc.Time, sc.Title, i); err != nil {
 			return err
 		}
 	}
+
+	// Every QR id must be a "qr" file of this same invitation.
+	distinct := map[string]bool{}
+	for _, g := range c.Gifts {
+		if q := qrID(g); q != nil {
+			distinct[*q] = true
+		}
+	}
+	if len(distinct) > 0 {
+		ids := make([]string, 0, len(distinct))
+		for k := range distinct {
+			ids = append(ids, k)
+		}
+		var found int
+		if err := tx.QueryRow(ctx, `
+			SELECT count(*) FROM tbl_media
+			WHERE invitation_id = $1::uuid AND kind = 'qr' AND id::text = ANY($2::text[])`, id, ids).Scan(&found); err != nil {
+			return err
+		}
+		if found != len(ids) {
+			return ErrBadMedia
+		}
+	}
+
 	for i, g := range c.Gifts {
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO tbl_wedding_gifts (invitation_id, side, bank_name, account_no, account_name, sort_order)
-			VALUES ($1::uuid, $2, $3, $4, $5, $6)`,
-			id, g.Side, g.Bank, g.AccountNo, g.AccountName, i); err != nil {
+			INSERT INTO tbl_wedding_gifts (invitation_id, side, bank_name, account_no, account_name, qr_media_id, sort_order)
+			VALUES ($1::uuid, $2, $3, $4, $5, $6::uuid, $7)`,
+			id, g.Side, g.Bank, g.AccountNo, g.AccountName, qrID(g), i); err != nil {
 			return err
 		}
 	}
@@ -120,7 +206,6 @@ const listFrom = `
 	LEFT JOIN tbl_wedding_infos  w ON w.invitation_id = i.id
 	WHERE ($1::text = '' OR i.slug ILIKE $2 OR i.title ILIKE $2 OR g.short_name ILIKE $2 OR b.short_name ILIKE $2)`
 
-// List returns one page of invitations (newest first) plus the total number of matches.
 func (s *Store) List(ctx context.Context, f ListFilter) ([]Summary, int, error) {
 	like := "%" + likeEscaper.Replace(f.Q) + "%"
 
@@ -155,14 +240,49 @@ func (s *Store) List(ctx context.Context, f ListFilter) ([]Summary, int, error) 
 	return items, total, rows.Err()
 }
 
+// GetByID loads everything the edit form needs (same shape as the PUT body, plus id and status).
+func (s *Store) GetByID(ctx context.Context, id string) (*Detail, error) {
+	d := &Detail{}
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, status, user_id::text, template_id::text, slug, COALESCE(title, ''), data
+		FROM tbl_invitations WHERE id = $1::uuid`, id).
+		Scan(&d.ID, &d.Status, &d.UserID, &d.TemplateID, &d.Slug, &d.Title, &d.Settings)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || pgCode(err) == "22P02" {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	if d.Settings == nil {
+		d.Settings = map[string]any{}
+	}
+
+	couple, err := s.loadPeople(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	d.Groom, d.Bride = couple.Groom, couple.Bride
+
+	if d.Event, err = s.loadEvent(ctx, id); err != nil {
+		return nil, err
+	}
+	if d.Schedule, err = s.loadSchedule(ctx, id); err != nil {
+		return nil, err
+	}
+	gifts, err := s.loadGifts(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	d.Gifts = make([]Gift, 0, len(gifts))
+	for _, g := range gifts {
+		d.Gifts = append(d.Gifts, Gift{Side: g.Side, Bank: g.Bank, AccountNo: g.AccountNo, AccountName: g.AccountName, QRMediaID: g.QRMediaID})
+	}
+	return d, nil
+}
+
 // RenderByID gathers everything a template needs. It does NOT check status (admin preview of drafts).
 func (s *Store) RenderByID(ctx context.Context, id string) (*Render, error) {
-	r := &Render{
-		Schedule: []ScheduleItem{},
-		Gifts:    []RenderGift{},
-		Wishes:   []map[string]any{},
-		Media:    RenderMedia{Photos: []map[string]string{}},
-	}
+	r := &Render{Wishes: []map[string]any{}}
 
 	var tplConfig, custom map[string]any
 	err := s.pool.QueryRow(ctx, `
@@ -176,15 +296,55 @@ func (s *Store) RenderByID(ctx context.Context, id string) (*Render, error) {
 		}
 		return nil, err
 	}
-	// invitation.data overrides template.config
 	r.Theme = merge(tplConfig["theme"], custom["theme"])
 	r.Sections = merge(tplConfig["sections"], custom["sections"])
 
-	if err := s.loadPeople(ctx, id, r); err != nil {
+	if r.Couple, err = s.loadPeople(ctx, id); err != nil {
 		return nil, err
 	}
-	e := &r.Event
-	err = s.pool.QueryRow(ctx, `
+	if r.Event, err = s.loadEvent(ctx, id); err != nil {
+		return nil, err
+	}
+	if r.Schedule, err = s.loadSchedule(ctx, id); err != nil {
+		return nil, err
+	}
+	if r.Gifts, err = s.loadGifts(ctx, id); err != nil {
+		return nil, err
+	}
+	if r.Media, err = s.loadMedia(ctx, id); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func (s *Store) loadPeople(ctx context.Context, id string) (Couple, error) {
+	var c Couple
+	rows, err := s.pool.Query(ctx, `
+		SELECT side, short_name, full_name, COALESCE(rank_label, ''), COALESCE(father_name, ''),
+		       COALESCE(mother_name, ''), COALESCE(family_address, '')
+		FROM tbl_wedding_people WHERE invitation_id = $1::uuid`, id)
+	if err != nil {
+		return c, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var side string
+		var p Person
+		if err := rows.Scan(&side, &p.ShortName, &p.FullName, &p.Rank, &p.Father, &p.Mother, &p.Address); err != nil {
+			return c, err
+		}
+		if side == "groom" {
+			c.Groom = p
+		} else {
+			c.Bride = p
+		}
+	}
+	return c, rows.Err()
+}
+
+func (s *Store) loadEvent(ctx context.Context, id string) (Event, error) {
+	var e Event
+	err := s.pool.QueryRow(ctx, `
 		SELECT ceremony_at, COALESCE(ceremony_place, ''), party_at, COALESCE(venue_name, ''),
 		       COALESCE(venue_address, ''), COALESCE(map_url, ''), COALESCE(lunar_text, ''),
 		       COALESCE(dress_code, ''), dress_colors, COALESCE(closing_message, '')
@@ -192,7 +352,7 @@ func (s *Store) RenderByID(ctx context.Context, id string) (*Render, error) {
 		Scan(&e.CeremonyAt, &e.CeremonyPlace, &e.PartyAt, &e.VenueName, &e.VenueAddress,
 			&e.MapURL, &e.LunarText, &e.DressCode, &e.DressColors, &e.ClosingMessage)
 	if err != nil {
-		return nil, err
+		return e, err
 	}
 	e.CeremonyAt = e.CeremonyAt.In(vnZone)
 	if e.PartyAt != nil {
@@ -202,77 +362,86 @@ func (s *Store) RenderByID(ctx context.Context, id string) (*Render, error) {
 	if e.DressColors == nil {
 		e.DressColors = []string{}
 	}
-
-	if err := s.loadSchedule(ctx, id, r); err != nil {
-		return nil, err
-	}
-	if err := s.loadGifts(ctx, id, r); err != nil {
-		return nil, err
-	}
-	return r, nil
+	return e, nil
 }
 
-func (s *Store) loadPeople(ctx context.Context, id string, r *Render) error {
-	rows, err := s.pool.Query(ctx, `
-		SELECT side, short_name, full_name, COALESCE(rank_label, ''), COALESCE(father_name, ''),
-		       COALESCE(mother_name, ''), COALESCE(family_address, '')
-		FROM tbl_wedding_people WHERE invitation_id = $1::uuid`, id)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var side string
-		var p Person
-		if err := rows.Scan(&side, &p.ShortName, &p.FullName, &p.Rank, &p.Father, &p.Mother, &p.Address); err != nil {
-			return err
-		}
-		if side == "groom" {
-			r.Couple.Groom = p
-		} else {
-			r.Couple.Bride = p
-		}
-	}
-	return rows.Err()
-}
-
-func (s *Store) loadSchedule(ctx context.Context, id string, r *Render) error {
+func (s *Store) loadSchedule(ctx context.Context, id string) ([]ScheduleItem, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT to_char(at_time, 'HH24:MI'), title
 		FROM tbl_wedding_schedules WHERE invitation_id = $1::uuid ORDER BY sort_order`, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rows.Close()
+	items := []ScheduleItem{}
 	for rows.Next() {
 		var x ScheduleItem
 		if err := rows.Scan(&x.Time, &x.Title); err != nil {
-			return err
+			return nil, err
 		}
-		r.Schedule = append(r.Schedule, x)
+		items = append(items, x)
 	}
-	return rows.Err()
+	return items, rows.Err()
 }
 
-func (s *Store) loadGifts(ctx context.Context, id string, r *Render) error {
+func (s *Store) loadGifts(ctx context.Context, id string) ([]RenderGift, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT side, bank_name, account_no, account_name
-		FROM tbl_wedding_gifts WHERE invitation_id = $1::uuid ORDER BY sort_order`, id)
+		SELECT g.side, g.bank_name, g.account_no, g.account_name, g.qr_media_id::text, m.url
+		FROM tbl_wedding_gifts g
+		LEFT JOIN tbl_media m ON m.id = g.qr_media_id
+		WHERE g.invitation_id = $1::uuid ORDER BY g.sort_order`, id)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RenderGift{}
+	for rows.Next() {
+		var g RenderGift
+		if err := rows.Scan(&g.Side, &g.Bank, &g.AccountNo, &g.AccountName, &g.QRMediaID, &g.QRURL); err != nil {
+			return nil, err
+		}
+		items = append(items, g)
+	}
+	return items, rows.Err()
+}
+
+// loadMedia maps uploaded files to the slots a template can use. QR files are reached through gifts.
+func (s *Store) loadMedia(ctx context.Context, id string) (RenderMedia, error) {
+	m := RenderMedia{Photos: []map[string]string{}}
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, kind, url FROM tbl_media
+		WHERE invitation_id = $1::uuid AND kind <> 'qr'
+		ORDER BY sort_order, created_at`, id)
+	if err != nil {
+		return m, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var g RenderGift
-		if err := rows.Scan(&g.Side, &g.Bank, &g.AccountNo, &g.AccountName); err != nil {
-			return err
+		var mid, kind, url string
+		if err := rows.Scan(&mid, &kind, &url); err != nil {
+			return m, err
 		}
-		r.Gifts = append(r.Gifts, g)
+		u := url
+		switch kind {
+		case "cover":
+			m.CoverURL = &u
+		case "hero":
+			m.HeroURL = &u
+		case "groom":
+			m.GroomURL = &u
+		case "bride":
+			m.BrideURL = &u
+		case "background":
+			m.BackgroundURL = &u
+		case "music":
+			m.MusicURL = &u
+		case "photo":
+			m.Photos = append(m.Photos, map[string]string{"id": mid, "url": url})
+		}
 	}
-	return rows.Err()
+	return m, rows.Err()
 }
 
-// merge copies base, then overlays over. Both may be nil or not an object.
 func merge(base, over any) map[string]any {
 	out := map[string]any{}
 	if b, ok := base.(map[string]any); ok {

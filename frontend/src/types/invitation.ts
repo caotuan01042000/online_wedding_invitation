@@ -7,6 +7,16 @@ export interface Person {
   address: string;
 }
 
+export interface InvitationMedia {
+  cover_url: string | null;
+  hero_url: string | null;
+  groom_url: string | null;
+  bride_url: string | null;
+  background_url: string | null;
+  music_url: string | null;
+  photos: { id: string; url: string }[];
+}
+
 export interface InvitationData {
   id: string;
   slug: string;
@@ -29,12 +39,7 @@ export interface InvitationData {
   };
   schedule: { time: string; title: string }[];
   gifts: { side: "groom" | "bride"; bank: string; account_no: string; account_name: string; qr_url: string | null }[];
-  media: {
-    cover_url: string | null;
-    hero_url: string | null;
-    music_url: string | null;
-    photos: { id: string; url: string }[];
-  };
+  media: InvitationMedia;
   wishes: { id: string; guest_name: string; message: string; created_at: string }[];
 }
 

@@ -55,7 +55,10 @@ export default function InvitationsPage() {
                 <td><span className="tag">{STATUS[r.status] ?? r.status}</span></td>
                 <td>{r.slug}</td>
                 <td>
-                  <a className="b g s" href={`/preview/${r.id}`} target="_blank" rel="noreferrer">Xem</a>
+                  <div className="acts">
+                    <Link className="b s" href={`/admin/invitations/${r.id}/edit`}>Sửa</Link>
+                    <a className="b g s" href={`/preview/${r.id}`} target="_blank" rel="noreferrer">Xem</a>
+                  </div>
                 </td>
               </tr>
             ))}

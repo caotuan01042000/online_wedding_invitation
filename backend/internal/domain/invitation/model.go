@@ -40,6 +40,7 @@ type Gift struct {
 	Bank        string `json:"bank"`
 	AccountNo   string `json:"account_no"`
 	AccountName string `json:"account_name"`
+	QRMediaID   *string `json:"qr_media_id"`
 }
 
 // Content is everything an admin enters for one invitation (the body of POST).
@@ -54,6 +55,12 @@ type Content struct {
 	Event      Event          `json:"event"`
 	Schedule   []ScheduleItem `json:"schedule"`
 	Gifts      []Gift         `json:"gifts"`
+}
+
+type Detail struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+	Content
 }
 
 // ---------- Read models ----------
@@ -110,11 +117,15 @@ type RenderGift struct {
 	AccountNo   string  `json:"account_no"`
 	AccountName string  `json:"account_name"`
 	QRURL       *string `json:"qr_url"`
+	QRMediaID   *string `json:"-"`
 }
 
 type RenderMedia struct {
-	CoverURL *string             `json:"cover_url"`
-	HeroURL  *string             `json:"hero_url"`
-	MusicURL *string             `json:"music_url"`
-	Photos   []map[string]string `json:"photos"`
+	CoverURL      *string             `json:"cover_url"`
+	HeroURL       *string             `json:"hero_url"`
+	GroomURL      *string             `json:"groom_url"`
+	BrideURL      *string             `json:"bride_url"`
+	BackgroundURL *string             `json:"background_url"`
+	MusicURL      *string             `json:"music_url"`
+	Photos        []map[string]string `json:"photos"`
 }

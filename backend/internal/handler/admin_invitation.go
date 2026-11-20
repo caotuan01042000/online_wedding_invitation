@@ -38,13 +38,7 @@ func (h *Admin) CreateInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The template must exist and be active.
-	t, err := h.Templates.Get(r.Context(), c.TemplateID)
-	switch {
-	case errors.Is(err, template.ErrNotFound), err == nil && !t.IsActive:
-		writeFields(w, map[string]string{"template_id": "template không tồn tại hoặc đã bị tắt"})
-		return
-	case err != nil:
-		h.failInvitation(w, err, "create invitation: get template")
+	if !h.templateOK(w, r, c.TemplateID) {
 		return
 	}
 
@@ -100,8 +94,82 @@ func (h *Admin) failInvitation(w http.ResponseWriter, err error, op string) {
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, invitation.ErrBadReference):
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
+	case errors.Is(err, invitation.ErrBadMedia):
+		writeFields(w, map[string]string{"gifts": err.Error()})
 	default:
 		log.Printf("%s: %v", op, err)
 		writeError(w, http.StatusInternalServerError, "lỗi hệ thống")
 	}
+}
+
+// GetInvitation returns the content of one invitation, shaped like the PUT body (used by the edit form).
+//
+//	GET /api/admin/invitations/{id}
+//	Cookie: token (admin)
+//	200   : {"id","status","user_id","template_id","slug","title","settings","groom","bride","event","schedule","gifts"}
+//	404   : not found (also when {id} is not a valid UUID)
+func (h *Admin) GetInvitation(w http.ResponseWriter, r *http.Request) {
+	d, err := h.Invitations.GetByID(r.Context(), r.PathValue("id"))
+	if err != nil {
+		h.failInvitation(w, err, "get invitation")
+		return
+	}
+	writeJSON(w, http.StatusOK, d)
+}
+
+// ReplaceInvitation overwrites the whole content of an invitation (PUT semantics, one transaction).
+// Status and uploaded media are not changed.
+//
+//	PUT /api/admin/invitations/{id}
+//	Cookie: token (admin)
+//	Body  : same as POST. Send every field: missing ones are cleared (settings included).
+//	        user_id empty = keep the current owner. gifts[].qr_media_id must be a "qr" file of THIS invitation.
+//	200   : {"id": "<uuid>", "slug": "..."}
+//	400   : not JSON / unknown field / too large
+//	404   : not found
+//	409   : slug already taken
+//	422   : {"error": "...", "fields": {...}}
+func (h *Admin) ReplaceInvitation(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var c invitation.Content
+	if err := decodeJSON(w, r, &c, 64<<10); err != nil {
+		writeError(w, http.StatusBadRequest, "dữ liệu gửi lên không hợp lệ")
+		return
+	}
+	c.Normalize()
+	if fields := c.Validate(); len(fields) > 0 {
+		writeFields(w, fields)
+		return
+	}
+
+	// Also gives an early 404. The template is only re-checked when it changes, so an invitation
+	// can still be edited after its template was switched off.
+	cur, err := h.Invitations.GetByID(r.Context(), id)
+	if err != nil {
+		h.failInvitation(w, err, "replace invitation: get")
+		return
+	}
+	if !strings.EqualFold(c.TemplateID, cur.TemplateID) && !h.templateOK(w, r, c.TemplateID) {
+		return
+	}
+
+	if err := h.Invitations.Replace(r.Context(), id, c); err != nil {
+		h.failInvitation(w, err, "replace invitation")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "slug": c.Slug})
+}
+
+// templateOK answers 422 / 500 itself and returns false when the template is missing or switched off.
+func (h *Admin) templateOK(w http.ResponseWriter, r *http.Request, id string) bool {
+	t, err := h.Templates.Get(r.Context(), id)
+	switch {
+	case errors.Is(err, template.ErrNotFound), err == nil && !t.IsActive:
+		writeFields(w, map[string]string{"template_id": "template không tồn tại hoặc đã bị tắt"})
+		return false
+	case err != nil:
+		h.failInvitation(w, err, "get template")
+		return false
+	}
+	return true
 }

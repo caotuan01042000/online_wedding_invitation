@@ -40,11 +40,9 @@ const W = {
     { who: "Cô dâu", bank: "Techcombank", no: "9876543210", name: "LE NGOC ANH", qr: "" },
   ],
 };
-const PHOTOS: string[] = []; // ví dụ: ["/anh1.jpg", "/anh2.jpg", ...] (để trong frontend/public)
-const HERO_IMG = ""; // ảnh rồng phượng nếu có, ví dụ "/rong-phuong.png"
-const MUSIC = ""; // nhạc nền nếu có, ví dụ "/nhac.mp3"
 
 const css = (t: (typeof THEMES)[keyof typeof THEMES]) => `
+.pt{width:160px;height:160px;border-radius:50%;object-fit:cover;border:2px solid var(--acc);margin:40px auto 0;display:block}
 .pg{background:#F6EEF0;min-height:100vh;font-family:var(--f-serif),serif}
 .col{max-width:520px;margin:0 auto;background:var(--bg);color:var(--txt);position:relative;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,.2)}
 .col *{box-sizing:border-box}.col h1,.col h2,.col h3,.col p{margin:0;font-weight:400}
@@ -132,6 +130,12 @@ const css = (t: (typeof THEMES)[keyof typeof THEMES]) => `
 
 export default function DragonTemplate({ data }: TemplateProps) {
   const W = useMemo(() => toDragonW(data), [data]);
+  const PHOTOS = data.media.photos.map((p) => p.url);
+  const HERO_IMG = data.media.hero_url ?? "";
+  const MUSIC = data.media.music_url ?? "";
+  const COVER = data.media.cover_url;
+  const GROOM_IMG = data.media.groom_url;
+  const BRIDE_IMG = data.media.bride_url;
   const t = THEMES[THEME];
   const [open, setOpen] = useState(false);
   const [left, setLeft] = useState<number | null>(null);
@@ -149,7 +153,7 @@ export default function DragonTemplate({ data }: TemplateProps) {
   ]);
 
   const d = useMemo(() => new Date(W.date), [W.date]);
-  const N = Math.max(PHOTOS.length, 7);
+  const N = PHOTOS.length || 7;
 
   useEffect(() => {
     const tick = () => setLeft(Math.max(0, d.getTime() - Date.now()));
@@ -165,7 +169,7 @@ export default function DragonTemplate({ data }: TemplateProps) {
 
   const openCard = () => {
     setOpen(true);
-    if (MUSIC && audio.current) audio.current.play().then(() => setPlaying(true)).catch(() => {});
+    if (MUSIC && audio.current) audio.current.play().then(() => setPlaying(true)).catch(() => { });
   };
 
   const s = left === null ? null : Math.floor(left / 1000);
@@ -229,7 +233,8 @@ export default function DragonTemplate({ data }: TemplateProps) {
       {MUSIC && <audio ref={audio} src={MUSIC} loop />}
 
       {/* BÌA */}
-      <section className={`cover ${open ? "off" : ""}`} aria-hidden={open}>
+      <section className={`cover ${open ? "off" : ""}`} aria-hidden={open}
+        style={COVER ? { background: `linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)), url(${COVER}) center/cover` } : undefined}>
         <p className="up" style={{ fontSize: 14, color: t.dim }}>Trân trọng kính mời</p>
         <h1 className="script" style={{ margin: "20px 0 4px" }}>{W.groom.short}</h1>
         <p className="script" style={{ fontSize: 40 }}>&amp;</p>
@@ -272,9 +277,13 @@ export default function DragonTemplate({ data }: TemplateProps) {
             ))}
           </div>
           <p className="up" style={{ fontSize: 19, lineHeight: 1.9, fontWeight: 600 }}>Trân trọng báo tin<br />lễ thành hôn của con chúng tôi</p>
+
+          {GROOM_IMG && <img className="pt" src={GROOM_IMG} alt={W.groom.full} />}
           <h3 className="script" style={{ fontSize: "clamp(44px,12vw,62px)", margin: "56px 0 0" }}>{W.groom.full}</h3>
           <p className="tag">Chú rể</p>
           <p className="script" style={{ fontSize: 50, margin: "26px 0" }}>&amp;</p>
+
+          {BRIDE_IMG && <img className="pt" src={BRIDE_IMG} alt={W.bride.full} />}
           <h3 className="script" style={{ fontSize: "clamp(44px,12vw,62px)" }}>{W.bride.full}</h3>
           <p className="tag">Cô dâu</p>
           <p className="up" style={{ fontSize: 20, lineHeight: 1.9, margin: "64px 0 12px" }}>{W.ceremonyPlace}</p>

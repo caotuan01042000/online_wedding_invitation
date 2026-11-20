@@ -9,14 +9,17 @@ import (
 	"online-wedding-invitation/internal/domain/user"
 	"online-wedding-invitation/internal/handler"
 	"online-wedding-invitation/internal/domain/invitation"
+
+	"online-wedding-invitation/internal/domain/media"
+	"online-wedding-invitation/internal/storage"
 )
 
-func New(cfg *config.Config, users *user.Store, templates *template.Store, invitations *invitation.Store) http.Handler {
-	secret := []byte(cfg.JWTSecret)
+func New(cfg *config.Config, users *user.Store, templates *template.Store, invitations *invitation.Store,
+	medias *media.Store, files storage.Storage) http.Handler {	secret := []byte(cfg.JWTSecret)
 	mux := http.NewServeMux()
 
 	authH := &handler.Auth{Store: users, Secret: secret, Secure: cfg.CookieSecure, TTL: cfg.TokenTTL}
-	adminH := &handler.Admin{Users: users, Templates: templates, Invitations: invitations}
+		adminH := &handler.Admin{Users: users, Templates: templates, Invitations: invitations, Media: medias, Storage: files}
 	
 
 	registerSystemRoutes(mux)

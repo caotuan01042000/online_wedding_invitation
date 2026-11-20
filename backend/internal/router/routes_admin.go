@@ -51,6 +51,13 @@ func registerAdminRoutes(mux *http.ServeMux, secret []byte, users handler.UserSt
 	mux.HandleFunc("GET /api/admin/invitations", admin(h.ListInvitations))
 	mux.HandleFunc("POST /api/admin/invitations", admin(h.CreateInvitation))
 	mux.HandleFunc("GET /api/admin/invitations/{id}/render", admin(h.RenderInvitation))
-	// Phase 2: invitations, media, rsvps, wishes
+
+	mux.HandleFunc("GET /api/admin/invitations/{id}", admin(h.GetInvitation))
+	mux.HandleFunc("PUT /api/admin/invitations/{id}", admin(h.ReplaceInvitation))
 	
+	// media (files on Cloudflare R2)
+	mux.HandleFunc("GET /api/admin/invitations/{id}/media", admin(h.ListMedia))
+	mux.HandleFunc("POST /api/admin/invitations/{id}/media", admin(h.UploadMedia))
+	mux.HandleFunc("PATCH /api/admin/invitations/{id}/media/order", admin(h.ReorderMedia))
+	mux.HandleFunc("DELETE /api/admin/invitations/{id}/media/{mediaId}", admin(h.DeleteMedia))
 }

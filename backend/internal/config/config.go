@@ -18,6 +18,11 @@ type Config struct {
 	JWTSecret    string
 	CookieSecure bool
 	TokenTTL     time.Duration
+	R2AccountID string
+	R2AccessKey string
+	R2SecretKey string
+	R2Bucket    string
+	R2PublicURL string
 }
 
 func Load() *Config {
@@ -30,6 +35,12 @@ func Load() *Config {
 		JWTSecret:    os.Getenv("JWT_SECRET"),
 		CookieSecure: os.Getenv("COOKIE_SECURE") == "true",
 		TokenTTL:     getDuration("TOKEN_TTL", 24*time.Hour),
+
+		R2AccountID: os.Getenv("R2_ACCOUNT_ID"),
+		R2AccessKey: os.Getenv("R2_ACCESS_KEY_ID"),
+		R2SecretKey: os.Getenv("R2_SECRET_ACCESS_KEY"),
+		R2Bucket:    os.Getenv("R2_BUCKET"),
+		R2PublicURL: os.Getenv("R2_PUBLIC_URL"),
 	}
 	if c.JWTSecret == "" {
 		b := make([]byte, 32)
@@ -38,6 +49,10 @@ func Load() *Config {
 		log.Println("CẢNH BÁO: chưa có JWT_SECRET, dùng secret ngẫu nhiên (restart là mất phiên đăng nhập)")
 	}
 	return c
+}
+
+func (c *Config) R2Enabled() bool {
+	return c.R2AccountID != "" && c.R2AccessKey != "" && c.R2SecretKey != "" && c.R2Bucket != "" && c.R2PublicURL != ""
 }
 
 func (c *Config) Validate() error {

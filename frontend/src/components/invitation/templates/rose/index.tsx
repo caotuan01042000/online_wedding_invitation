@@ -123,6 +123,11 @@ const shade = (i: number) => ({ background: `linear-gradient(${150 + i * 25}deg,
 
 export default function RoseTemplate({ data }: TemplateProps) {
   const W = useMemo(() => toRoseW(data), [data]);
+  const photos = data.media.photos;
+  const N = photos.length || 6; // no photos yet: 6 placeholders
+  const cover = data.media.cover_url;
+  const phStyle = (i: number) => (photos[i] ? { background: `url(${photos[i].url}) center/cover` } : shade(i));
+
   const [open, setOpen] = useState(false);
   const [left, setLeft] = useState<number | null>(null);
   const [lb, setLb] = useState<number | null>(null);
@@ -188,7 +193,8 @@ export default function RoseTemplate({ data }: TemplateProps) {
       <style>{CSS}</style>
 
       {/* BÌA */}
-      <section className={`cover ${open ? "off" : ""}`} aria-hidden={open}>
+       <section className={`cover ${open ? "off" : ""}`} aria-hidden={open}
+        style={cover ? { background: `linear-gradient(rgba(253,238,242,.6),rgba(255,248,249,.85)), url(${cover}) center/cover` } : undefined}>
         <Flower size={240} className="fl sway" style={{ left: -70, top: -50 }} />
         <Flower size={200} className="fl sway" style={{ right: -60, bottom: -40 }} />
         <div className="glass">
@@ -234,11 +240,11 @@ export default function RoseTemplate({ data }: TemplateProps) {
       <section className="sec tint">
         <h2 className={`${H} ttl`}>Album ảnh cưới</h2>
         <div className="grid">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <button key={i} className="ph" style={shade(i)} onClick={() => setLb(i)} aria-label={`Xem ảnh ${i + 1}`} />
+          {Array.from({ length: N }).map((_, i) => (
+            <button key={i} className="ph" style={phStyle(i)} onClick={() => setLb(i)} aria-label={`Xem ảnh ${i + 1}`} />
           ))}
         </div>
-        <p className="sm" style={{ marginTop: 14 }}>Chạm vào ảnh để xem lớn (đang là ảnh giữ chỗ)</p>
+        <p className="sm" style={{ marginTop: 14 }}>{photos.length === 0 && <span>Chưa có ảnh nào.</span>}</p>
       </section>
 
       {/* TIỆC CƯỚI + ĐẾM NGƯỢC + LỊCH + XÁC NHẬN */}
@@ -337,9 +343,9 @@ export default function RoseTemplate({ data }: TemplateProps) {
       {lb !== null && (
         <div className="lb" role="dialog" aria-label="Xem ảnh">
           <button className="x" onClick={() => setLb(null)} aria-label="Đóng">✕</button>
-          <button onClick={() => setLb((lb + 5) % 6)} aria-label="Ảnh trước">‹</button>
-          <div className="big" style={shade(lb)} />
-          <button onClick={() => setLb((lb + 1) % 6)} aria-label="Ảnh sau">›</button>
+          <button onClick={() => setLb((lb + N - 1) % N)} aria-label="Ảnh trước">‹</button>
+          <div className="big" style={phStyle(lb)} />
+          <button onClick={() => setLb((lb + 1) % N)} aria-label="Ảnh sau">›</button>
         </div>
       )}
 

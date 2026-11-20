@@ -35,6 +35,6 @@ export const sampleData: InvitationData = {
     { side: "groom", bank: "Vietcombank", account_no: "0123456789", account_name: "NGUYEN MINH TUAN", qr_url: null },
     { side: "bride", bank: "Techcombank", account_no: "9876543210", account_name: "LE NGOC ANH", qr_url: null },
   ],
-  media: { cover_url: null, hero_url: null, music_url: null, photos: [] },
+  media: { cover_url: null, hero_url: null, groom_url: null, bride_url: null, background_url: null, music_url: null, photos: [] },
   wishes: [],
 };
