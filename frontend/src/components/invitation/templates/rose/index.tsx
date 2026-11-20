@@ -140,7 +140,7 @@ export default function RoseTemplate({ data }: TemplateProps) {
     { name: "Bạn thân cô dâu", text: "Chúc hai bạn luôn yêu thương nhau như ngày đầu!" },
   ]);
 
- const d = useMemo(() => new Date(W.date), [W.date]);
+  const d = useMemo(() => new Date(W.date), [W.date]);
 
   useEffect(() => {
     const tick = () => setLeft(Math.max(0, d.getTime() - Date.now()));
@@ -193,7 +193,7 @@ export default function RoseTemplate({ data }: TemplateProps) {
       <style>{CSS}</style>
 
       {/* BÌA */}
-       <section className={`cover ${open ? "off" : ""}`} aria-hidden={open}
+      <section className={`cover ${open ? "off" : ""}`} aria-hidden={open}
         style={cover ? { background: `linear-gradient(rgba(253,238,242,.6),rgba(255,248,249,.85)), url(${cover}) center/cover` } : undefined}>
         <Flower size={240} className="fl sway" style={{ left: -70, top: -50 }} />
         <Flower size={200} className="fl sway" style={{ right: -60, bottom: -40 }} />

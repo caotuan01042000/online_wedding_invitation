@@ -1,6 +1,5 @@
-import RoseTemplate from "@/components/invitation/templates/rose";
-import { sampleData } from "@/components/invitation/sampleData";
+import HomePage from "@/components/invitation/home";
 
 export default function Home() {
-  return <RoseTemplate data={sampleData} />;
+  return <HomePage />;
 }
