@@ -45,7 +45,7 @@ func (s *Store) InvitationExists(ctx context.Context, id string) (bool, error) {
 func (s *Store) List(ctx context.Context, invID, kind string) ([]Media, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT `+cols+` FROM tbl_media
-		WHERE invitation_id = $1::uuid AND ($2::text = '' OR kind = $2)
+				WHERE invitation_id = $1::uuid AND ($2::text = '' OR kind = $2::text)
 		ORDER BY kind, sort_order, created_at`, invID, kind)
 	if err != nil {
 		if pgCode(err) == "22P02" {
@@ -118,8 +118,8 @@ func (s *Store) Add(ctx context.Context, n NewMedia) (*Media, []string, error) {
 
 	m, err := scan(tx.QueryRow(ctx, `
 		INSERT INTO tbl_media (invitation_id, kind, storage_key, url, mime_type, size_bytes, sort_order)
-		VALUES ($1::uuid, $2, $3, $4, $5, $6,
-		  COALESCE((SELECT max(sort_order) + 1 FROM tbl_media WHERE invitation_id = $1::uuid AND kind = $2), 0))
+		VALUES ($1::uuid, $2::varchar, $3, $4, $5, $6,
+		  COALESCE((SELECT max(sort_order) + 1 FROM tbl_media WHERE invitation_id = $1::uuid AND kind = $2::varchar), 0))
 		RETURNING `+cols,
 		n.InvitationID, n.Kind, n.StorageKey, n.URL, n.MimeType, n.SizeBytes))
 	if err != nil {
