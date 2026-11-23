@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Cormorant_Garamond, Noto_Serif, Be_Vietnam_Pro } from "next/font/google";
 import type { TemplateProps } from "@/types/invitation";
 import { toForestW } from "./adapter";
+import { useScrollReveal } from "../../shared/useScrollReveal";
 
 const display = Cormorant_Garamond({ subsets: ["vietnamese", "latin"], weight: ["400", "500", "600"], variable: "--f-display" });
 const serif = Noto_Serif({ subsets: ["vietnamese", "latin"], weight: ["400", "600", "700"], variable: "--f-serif" });
@@ -27,26 +28,26 @@ const CSS = `
 .fo{min-height:100vh;background:var(--page);color:var(--ink);font-family:var(--f-serif),Georgia,serif}
 .fo *{box-sizing:border-box}
 .fo h1,.fo h2,.fo h3,.fo p{margin:0;font-weight:400}
-.col{max-width:520px;margin:0 auto;background:var(--paper);position:relative;overflow:hidden;border-left:1px solid #F3E5D2;border-right:1px solid #F3E5D2}
+.col{width:100%;max-width:var(--col-w,880px);margin:0 auto;container-type:inline-size;background:var(--paper);position:relative;overflow:hidden;border-left:1px solid #F3E5D2;border-right:1px solid #F3E5D2}
 .up{text-transform:uppercase}
 .dim{color:var(--dim)}
 .sn{font-family:var(--f-sans),sans-serif;font-weight:300}
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
-/* HERO */
-.hero{position:relative;padding:22px 0 64px;text-align:center}
-.disc{position:absolute;top:0;left:2%;right:2%;height:310px;background:var(--deep);border-radius:0 0 50% 50%/0 0 100% 100%}
-.hero>*{position:relative}
-.wl{font-size:11px;letter-spacing:.45em;color:var(--mint);text-transform:uppercase;font-family:var(--f-display),serif;padding:0 8px}
-.nr{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin:18px 18px 0}
-.nr small{display:block;font-family:var(--f-sans),sans-serif;font-size:13px;color:#fff;text-transform:capitalize;margin-bottom:4px}
-.nr b{display:block;font-weight:400;font-size:clamp(17px,5vw,25px);color:#fff;text-transform:uppercase;letter-spacing:.01em}
-.xi{font-size:58px;line-height:1;color:var(--mint);font-weight:700;font-family:"Noto Sans TC","Noto Serif TC","SimHei","Microsoft YaHei",sans-serif;padding:0 6px}
-.arc{display:block;margin:30px auto 0;width:300px;max-width:90%;overflow:visible}
-.arch{width:42%;min-width:180px;margin:-4px auto 0;aspect-ratio:535/900;border-radius:999px 999px 0 0;background-size:cover;background-position:center;box-shadow:0 20px 50px -25px rgba(11,31,12,.6)}
+/* HERO: mọi kích thước tính theo chiều rộng cột (cqw) nên luôn đúng tỉ lệ ở mọi màn hình */
+.hero{position:relative;height:104.7cqw;text-align:center}
+.hero>*{position:absolute}
+.disc{top:0;left:1.6%;right:1.6%;height:48.4cqw;background:var(--deep);border-radius:0 0 50% 50%/0 0 100% 100%}
+.wl{top:6.2cqw;left:0;right:0;font-size:max(9px,1.4cqw);letter-spacing:.45em;color:var(--mint);text-transform:uppercase;font-family:var(--f-display),serif}
+.nr{top:14.6cqw;left:0;right:0;transform:translateY(-50%);display:grid;grid-template-columns:1fr 12cqw 1fr;align-items:center;padding:0 5.2cqw}
+.nr small{display:block;font-family:var(--f-sans),sans-serif;font-size:max(11px,1.75cqw);color:#fff;text-transform:capitalize;margin-bottom:.5cqw}
+.nr b{display:block;font-weight:400;font-size:max(15px,2.9cqw);color:#fff;text-transform:uppercase;letter-spacing:.01em}
+.xi{font-size:max(40px,9.6cqw);line-height:1;color:var(--mint);font-weight:700;font-family:"Noto Sans TC","Noto Serif TC","SimHei","Microsoft YaHei",sans-serif}
+.arc{top:24.5cqw;left:50%;transform:translateX(-50%);width:36cqw;height:auto;overflow:visible}
+.arch{top:28.7cqw;left:50%;transform:translateX(-50%);width:41.3cqw;aspect-ratio:535/900;border-radius:999px 999px 0 0;background-size:cover;background-position:center;box-shadow:0 20px 50px -25px rgba(11,31,12,.6)}
 
 /* BANNER + BODY */
-.bn{background:var(--ink);color:#fff;font-family:var(--f-serif),serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:20px;padding:22px 12px;text-align:center}
+.bn{background:var(--ink);color:#fff;font-family:var(--f-serif),serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:22px;padding:20px 12px;text-align:center}
 .pad{padding:44px 24px 60px;text-align:center}
 .hd{font-size:26px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
 
@@ -71,18 +72,20 @@ const CSS = `
 .lu{font-size:14px;color:#555;margin-top:14px}
 
 /* ALBUM */
-.cf{position:relative;height:420px;perspective:1100px;margin:0 auto}
-.cf .s{position:absolute;left:50%;top:14px;width:215px;height:340px;margin-left:-108px;border-radius:14px;background-size:cover;background-position:center;transition:transform .6s,opacity .6s;cursor:pointer;box-shadow:0 22px 40px -20px rgba(33,59,39,.55)}
+.cf{position:relative;height:520px;perspective:1100px;margin:0 auto}
+.cf .s{position:absolute;left:50%;top:14px;width:270px;height:440px;margin-left:-135px;border-radius:14px;background-size:cover;background-position:center;transition:transform .6s,opacity .6s;cursor:pointer;box-shadow:0 22px 40px -20px rgba(33,59,39,.55)}
 .cf .nv{position:absolute;top:50%;z-index:20;width:40px;height:40px;margin-top:-20px;border-radius:50%;border:0;background:rgba(60,60,55,.75);color:#fff;font-size:20px;cursor:pointer}
 .dots{display:flex;gap:9px;justify-content:center;margin-top:16px}
 .dots button{width:9px;height:9px;border-radius:99px;border:0;padding:0;background:#E3DED6;cursor:pointer;transition:width .3s}
 .dots button.on{width:34px;background:#C9C5BD}
 
+@container (max-width:560px){.cf{height:420px}.cf .s{width:215px;height:340px;margin-left:-108px}}
+
 /* TIỆC */
 .pt1{font-size:21px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:12px}
 .tm{font-size:32px;font-weight:700;margin:6px 0 10px}
 .kh{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#555;margin-top:30px}
-.cdn{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:40px 0 0}
+.cdn{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:420px;margin:40px auto 0}
 .cdn div{background:#fff;border-radius:12px;padding:14px 0;box-shadow:0 8px 24px -18px rgba(33,59,39,.5)}
 .cdn b{display:block;font-size:26px;font-weight:600}
 .cdn span{font-size:12px;color:var(--dim)}
@@ -98,10 +101,10 @@ const CSS = `
 .btn{display:inline-block;border:0;cursor:pointer;background:var(--ink);color:#fff;border-radius:14px;padding:16px 26px;font-family:var(--f-serif),serif;font-weight:700;font-size:17px;letter-spacing:.03em;text-transform:uppercase;text-decoration:none;transition:filter .2s}
 .btn:hover{filter:brightness(1.15)}
 .btn.pill{border-radius:999px;padding:14px 30px;font-family:var(--f-sans),sans-serif;font-weight:500;font-size:15px}
-.mapbox{width:100%;height:330px;border:0;border-radius:18px;margin-top:34px}
+.mapbox{display:block;width:86%;height:min(442px,72cqw);border:0;border-radius:18px;margin:34px auto 0}
 .dir{display:inline-flex;align-items:center;gap:10px;margin-top:22px;color:var(--ink);font-weight:700;font-size:17px;text-decoration:none}
-.dc{display:flex;gap:30px;justify-content:center;margin-top:26px}
-.dc i{width:68px;height:68px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.dc{display:flex;gap:26px;justify-content:center;margin-top:26px}
+.dc i{width:48px;height:48px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
 .tl{max-width:340px;margin:0 auto;position:relative}
 .tl:before{content:"";position:absolute;left:50%;top:14px;bottom:14px;width:1px;background:var(--ink);opacity:.5}
 .tl div{display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;padding:16px 0;font-size:18px}
@@ -110,6 +113,7 @@ const CSS = `
 .tl div span:last-child{text-align:left;padding-left:18px}
 
 /* LƯU BÚT */
+.fc,.wl2{max-width:590px;margin-left:auto;margin-right:auto}
 .fc{background:#fff;border-radius:14px;padding:28px 30px;box-shadow:0 18px 40px -26px rgba(33,59,39,.45);text-align:left}
 .fc input,.fc textarea{display:block;width:100%;border:1px solid #E6E2DA;border-radius:10px;padding:16px 18px;font-family:var(--f-sans),sans-serif;font-weight:300;font-size:15px;color:#333;background:#fff;resize:none}
 .fc input{margin-bottom:14px}
@@ -144,6 +148,23 @@ const CSS = `
 .mus.on{animation:spin 6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.cf .s,.dots button,.gb svg,.mus.on{transition:none;animation:none}}
+/* HIỆU ỨNG XUẤT HIỆN */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s ease}
+.rv.rv-in{opacity:1;transform:none}
+
+/* Mở đầu hero (chỉ dùng CSS, không dùng JS) */
+@keyframes fo-fade{from{opacity:0}to{opacity:1}}
+@keyframes fo-arch{from{opacity:0;transform:translateX(-50%) translateY(22px)}to{opacity:1;transform:translateX(-50%)}}
+.disc{animation:fo-fade 1.1s ease both}
+.wl{animation:fo-fade 1s .25s ease both}
+.nr{animation:fo-fade 1s .45s ease both}
+.arc{animation:fo-fade 1s .7s ease both}
+.arch{animation:fo-arch 1.1s .55s ease both}
+
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .hero>*{animation:none!important}
+}
 `;
 
 const num = (d: Date, o: Intl.DateTimeFormatOptions) => Number(new Intl.DateTimeFormat("en-US", { timeZone: TZ, ...o }).format(d));
@@ -159,7 +180,7 @@ function stamp(iso: string): string {
 
 function GiftBox() {
   return (
-    <svg viewBox="0 0 160 170" width="190" aria-hidden>
+    <svg viewBox="0 0 160 170" width="240" aria-hidden>
       <defs>
         <linearGradient id="fg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#F5E2AE" /><stop offset="1" stopColor="#C9A55E" /></linearGradient>
       </defs>
@@ -190,9 +211,14 @@ export default function ForestTemplate({ data, preview }: TemplateProps) {
   const [a, setA] = useState(0);
   const [modal, setModal] = useState<null | "rsvp" | number>(null);
   const [left, setLeft] = useState<number | null>(null);
+
   const [playing, setPlaying] = useState(false);
   const audio = useRef<HTMLAudioElement>(null);
   const touch = useRef(0);
+  
+  const root = useRef<HTMLDivElement>(null);
+  useScrollReveal(root, ".bn, .pad > *");
+
   const [rsvp, setRsvp] = useState({ name: "", attend: "yes", guests: "1" });
   const [rsvpDone, setRsvpDone] = useState(false);
   const [wish, setWish] = useState({ name: "", text: "" });
@@ -250,7 +276,7 @@ export default function ForestTemplate({ data, preview }: TemplateProps) {
     const ab = Math.abs(o);
     return {
       background: PHOTOS[i] ? `url(${PHOTOS[i]}) center/cover` : `linear-gradient(${150 + i * 25}deg,#CFE0D2,#7C9A86)`,
-      transform: `translateX(${o * 54}%) translateZ(${-ab * 120}px) rotateY(${-o * 28}deg)`,
+      transform: `translateX(${o * 68}%) translateZ(${-ab * 120}px) rotateY(${-o * 28}deg)`,
       opacity: ab > 2 ? 0 : 1 - ab * 0.3,
       zIndex: 10 - ab,
       pointerEvents: ab > 2 ? "none" : "auto",
@@ -283,7 +309,7 @@ export default function ForestTemplate({ data, preview }: TemplateProps) {
   } as React.CSSProperties;
 
   return (
-    <div className={`fo ${display.variable} ${serif.variable} ${sans.variable}`} style={{ ...vars, fontFamily: "var(--f-serif),Georgia,serif" }}>
+    <div ref={root} className={`fo ${display.variable} ${serif.variable} ${sans.variable}`} style={{ ...vars, fontFamily: "var(--f-serif),Georgia,serif" }}>
       <style>{CSS}</style>
       {MUSIC && <audio ref={audio} src={MUSIC} loop />}
 
