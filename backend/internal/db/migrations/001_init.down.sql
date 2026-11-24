@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS tbl_wishes;
+DROP TABLE IF EXISTS tbl_rsvps;
+DROP TABLE IF EXISTS tbl_invitations;
+DROP TABLE IF EXISTS tbl_templates;
+DROP TABLE IF EXISTS tbl_role_permissions;
+DROP TABLE IF EXISTS tbl_permissions;
+DROP TABLE IF EXISTS tbl_users;
+DROP TABLE IF EXISTS tbl_roles;
+DROP FUNCTION IF EXISTS set_updated_at();

@@ -3,17 +3,42 @@ package router
 import (
 	"net/http"
 
-	"github.com/yourname/online-wedding-invitation/internal/handler"
+	"online-wedding-invitation/internal/auth"
+	"online-wedding-invitation/internal/config"
+	"online-wedding-invitation/internal/domain/template"
+	"online-wedding-invitation/internal/domain/user"
+	"online-wedding-invitation/internal/handler"
+	"online-wedding-invitation/internal/domain/invitation"
+
+	"online-wedding-invitation/internal/domain/media"
+	"online-wedding-invitation/internal/storage"
 )
 
-func New() http.Handler {
+func New(cfg *config.Config, users *user.Store, templates *template.Store, invitations *invitation.Store,
+	medias *media.Store, files storage.Storage) http.Handler {	secret := []byte(cfg.JWTSecret)
 	mux := http.NewServeMux()
 
-	// API
-	mux.HandleFunc("GET /api/hello", handler.Hello)
+	authH := &handler.Auth{Store: users, Secret: secret, Secure: cfg.CookieSecure, TTL: cfg.TokenTTL}
+		adminH := &handler.Admin{Users: users, Templates: templates, Invitations: invitations, Media: medias, Storage: files}
+	
 
-	// Static (trang thiệp cưới)
+	registerSystemRoutes(mux)
+	registerAuthRoutes(mux, authH, secret)
+	registerAdminRoutes(mux, secret, users, adminH)
+	// Phase 2: registerPublicRoutes(mux, ...)
+
 	mux.Handle("GET /", http.FileServer(http.Dir("web/static")))
 
-	return mux
+	return chain(mux, recoverer, logger) // recoverer is the outermost
+}
+
+func registerSystemRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/hello", handler.Hello)
+}
+
+func registerAuthRoutes(mux *http.ServeMux, a *handler.Auth, secret []byte) {
+	mux.HandleFunc("POST /api/auth/register", a.Register)
+	mux.HandleFunc("POST /api/auth/login", a.Login)
+	mux.HandleFunc("POST /api/auth/logout", a.Logout)
+	mux.HandleFunc("GET /api/auth/me", auth.Require(secret, a.Me))
 }

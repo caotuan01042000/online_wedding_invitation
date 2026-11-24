@@ -1,13 +1,12 @@
 package handler
 
-import (
-	"encoding/json"
-	"net/http"
-)
+import "net/http"
 
+// Hello dùng cho healthcheck.
+//
+//	GET /api/hello
+//	Input : không có
+//	200   : {"message": "Hello World"}
 func Hello(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"message": "Hello World",
-	})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Hello World"})
 }
