@@ -173,3 +173,34 @@ func (h *Admin) templateOK(w http.ResponseWriter, r *http.Request, id string) bo
 	}
 	return true
 }
+
+// SetInvitationStatus publishes / unpublishes / archives an invitation.
+//
+//	PATCH /api/admin/invitations/{id}/status
+//	Cookie: token (admin)
+//	Body  : {"status": "draft" | "published" | "archived"}  (max 1KB)
+//	200   : {"id": "<uuid>", "status": "published"}
+//	400   : bad body
+//	404   : not found
+//	422   : invalid status
+func (h *Admin) SetInvitationStatus(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := decodeJSON(w, r, &req, 1<<10); err != nil {
+		writeError(w, http.StatusBadRequest, "dữ liệu gửi lên không hợp lệ")
+		return
+	}
+	switch req.Status {
+	case invitation.StatusDraft, invitation.StatusPublished, invitation.StatusArchived:
+	default:
+		writeFields(w, map[string]string{"status": "phải là draft, published hoặc archived"})
+		return
+	}
+	id := r.PathValue("id")
+	if err := h.Invitations.SetStatus(r.Context(), id, req.Status); err != nil {
+		h.failInvitation(w, err, "set invitation status")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "status": req.Status})
+}

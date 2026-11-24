@@ -60,4 +60,6 @@ func registerAdminRoutes(mux *http.ServeMux, secret []byte, users handler.UserSt
 	mux.HandleFunc("POST /api/admin/invitations/{id}/media", admin(h.UploadMedia))
 	mux.HandleFunc("PATCH /api/admin/invitations/{id}/media/order", admin(h.ReorderMedia))
 	mux.HandleFunc("DELETE /api/admin/invitations/{id}/media/{mediaId}", admin(h.DeleteMedia))
+
+	mux.HandleFunc("PATCH /api/admin/invitations/{id}/status", admin(h.SetInvitationStatus))
 }
