@@ -25,7 +25,7 @@ func New(cfg *config.Config, users *user.Store, templates *template.Store, invit
 	registerSystemRoutes(mux)
 	registerAuthRoutes(mux, authH, secret)
 	registerAdminRoutes(mux, secret, users, adminH)
-	// Phase 2: registerPublicRoutes(mux, ...)
+	registerPublicRoutes(mux, &handler.Public{Invitations: invitations})
 
 	mux.Handle("GET /", http.FileServer(http.Dir("web/static")))
 

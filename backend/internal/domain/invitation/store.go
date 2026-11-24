@@ -456,3 +456,48 @@ func merge(base, over any) map[string]any {
 	}
 	return out
 }
+
+// RenderPublished loads a PUBLISHED invitation by slug (guests). Drafts and archived ones are "not found".
+func (s *Store) RenderPublished(ctx context.Context, slug string) (*Render, error) {
+	var id string
+	err := s.pool.QueryRow(ctx,
+		`SELECT id::text FROM tbl_invitations WHERE slug = $1 AND status = 'published'`,
+		strings.ToLower(strings.TrimSpace(slug))).Scan(&id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	out, err := s.RenderByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Count the view without blocking the response.
+	go func() {
+		c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, _ = s.pool.Exec(c, `UPDATE tbl_invitations SET view_count = view_count + 1 WHERE id = $1::uuid`, id)
+	}()
+	return out, nil
+}
+
+// SetStatus switches draft / published / archived. published_at is set only the first time.
+func (s *Store) SetStatus(ctx context.Context, id, status string) error {
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE tbl_invitations
+		SET status = $2::varchar,
+		    published_at = CASE WHEN $2::varchar = 'published' THEN COALESCE(published_at, now()) ELSE published_at END
+		WHERE id = $1::uuid`, id, status)
+	if err != nil {
+		if pgCode(err) == "22P02" {
+			return ErrNotFound
+		}
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

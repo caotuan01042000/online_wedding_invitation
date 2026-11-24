@@ -29,13 +29,13 @@ type TemplateStore interface {
 }
 
 
-type InvitationStore interface {
-	Create(ctx context.Context, createdBy string, c invitation.Content) (string, error)
-	Replace(ctx context.Context, id string, c invitation.Content) error
-	GetByID(ctx context.Context, id string) (*invitation.Detail, error)
-	List(ctx context.Context, f invitation.ListFilter) ([]invitation.Summary, int, error)
-	RenderByID(ctx context.Context, id string) (*invitation.Render, error)
-}
+// type InvitationStore interface {
+// 	Create(ctx context.Context, createdBy string, c invitation.Content) (string, error)
+// 	Replace(ctx context.Context, id string, c invitation.Content) error
+// 	GetByID(ctx context.Context, id string) (*invitation.Detail, error)
+// 	List(ctx context.Context, f invitation.ListFilter) ([]invitation.Summary, int, error)
+// 	RenderByID(ctx context.Context, id string) (*invitation.Render, error)
+// }
 
 type MediaStore interface {
 	InvitationExists(ctx context.Context, id string) (bool, error)
@@ -55,4 +55,13 @@ type Admin struct {
 
 func writeFields(w http.ResponseWriter, fields map[string]string) {
 	writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": "dữ liệu không hợp lệ", "fields": fields})
+}
+
+type InvitationStore interface {
+	Create(ctx context.Context, createdBy string, c invitation.Content) (string, error)
+	Replace(ctx context.Context, id string, c invitation.Content) error
+	GetByID(ctx context.Context, id string) (*invitation.Detail, error)
+	List(ctx context.Context, f invitation.ListFilter) ([]invitation.Summary, int, error)
+	RenderByID(ctx context.Context, id string) (*invitation.Render, error)
+	SetStatus(ctx context.Context, id, status string) error // NEW
 }

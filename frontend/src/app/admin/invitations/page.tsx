@@ -57,7 +57,10 @@ export default function InvitationsPage() {
                 <td>
                   <div className="acts">
                     <Link className="b s" href={`/admin/invitations/${r.id}/edit`}>Sửa</Link>
-                    <a className="b g s" href={`/preview/${r.id}`} target="_blank" rel="noreferrer">Xem</a>
+                    <a className="b g s" href={`/preview/${r.id}`} target="_blank" rel="noreferrer">Xem thử</a>
+                    {r.status === "published" && (
+                      <a className="b g s" href={`/i/${r.slug}`} target="_blank" rel="noreferrer">Link công khai</a>
+                    )}
                   </div>
                 </td>
               </tr>
