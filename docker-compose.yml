@@ -32,8 +32,8 @@ services:
   backend:
     build: ./backend
     container_name: wedding-invitation-backend
-      ports:
-        - "127.0.0.1:8080:8080"
+    ports:
+      - "127.0.0.1:8080:8080"
     environment:
       - PORT=8080
       - DATABASE_URL=postgres://${DB_USER:-wedding}:${DB_PASSWORD}@db:5432/${DB_NAME:-wedding}?sslmode=disable
