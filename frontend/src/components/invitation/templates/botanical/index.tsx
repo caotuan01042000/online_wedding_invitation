@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Cormorant_Garamond, Noto_Serif, Be_Vietnam_Pro } from "next/font/google";
+import { Cormorant_Garamond, Noto_Serif, Be_Vietnam_Pro, Great_Vibes } from "next/font/google";
 import type { TemplateProps } from "@/types/invitation";
 import { toBotanicalW } from "./adapter";
 import { useScrollReveal } from "../../shared/useScrollReveal";
@@ -9,13 +9,13 @@ import { useScrollReveal } from "../../shared/useScrollReveal";
 const display = Cormorant_Garamond({ subsets: ["vietnamese", "latin"], weight: ["400", "500", "600"], variable: "--f-display" });
 const serif = Noto_Serif({ subsets: ["vietnamese", "latin"], weight: ["400", "600", "700"], variable: "--f-serif" });
 const sans = Be_Vietnam_Pro({ subsets: ["vietnamese", "latin"], weight: ["300", "400", "500"], variable: "--f-sans" });
+const script = Great_Vibes({ subsets: ["vietnamese", "latin", "latin-ext"], weight: "400", variable: "--f-script" });
 
 const TZ = "Asia/Ho_Chi_Minh";
-const ARC_TEXT = "LOVE NEVER FAILS"; // chữ cong dưới tên cô dâu chú rể
-const WELCOME = "WELCOME TO OUR WEDDING";
 
 // Màu mặc định theo ảnh mẫu. Ghi đè bằng tbl_templates.config.theme hoặc settings của từng thiệp.
-const DEFAULTS = { page: "#FFFFFF", paper: "#F8F5EF", ink: "#687C52", deep: "#43553A", mint: "#E6E9D9", dim: "#A18343", card: "#FFFFFF" };
+const DEFAULTS = { page: "#EFECE4", paper: "#F8F5EF", ink: "#687C52", deep: "#43553A", gold: "#A18343", dim: "#A18343", card: "#FFFFFF" };
+const DEFAULT_DRESS = ["#2B2825", "#9C8670", "#F1EDE3"];
 
 const SUGGEST = [
   "Chúc hai bạn trăm năm hạnh phúc, sớm sinh quý tử!",
@@ -24,160 +24,208 @@ const SUGGEST = [
   "Chúc hai bạn trọn đời bên nhau, vạn sự như ý!",
 ];
 
+/* ============ ẢNH HOA LÁ (đặt trong public/botanical/) ============ */
+const IMG = {
+  wreath: "/botanical/wreath.webp",
+  leaf: "/botanical/leaf.webp",
+  footerFlower: "/botanical/footer-flower.webp",
+  a: "/botanical/spray-a.webp",
+  b: "/botanical/spray-b.webp",
+};
+
+type Deco = { src: string; top: string; side: "l" | "r"; w: number; rot?: number; ghost?: boolean };
+
+// Hoa lá trang trí hai bên lề. w = % chiều rộng cột; top = % chiều cao cột.
+const DECOS: Deco[] = [
+  { src: IMG.leaf, top: "28%", side: "r", w: 34, rot: 18, ghost: true },
+  { src: IMG.leaf, top: "55%", side: "l", w: 38, rot: -20, ghost: true },
+  { src: IMG.a, top: "74%", side: "r", w: 30, rot: 8, ghost: true },
+  { src: IMG.b, top: "34%", side: "l", w: 15, rot: -8 },
+  { src: IMG.a, top: "27%", side: "r", w: 14, rot: 6 },
+  { src: IMG.leaf, top: "45%", side: "r", w: 13, rot: -25 },
+  { src: IMG.a, top: "54%", side: "l", w: 14, rot: -6 },
+  { src: IMG.b, top: "72%", side: "r", w: 14, rot: 10 },
+  { src: IMG.leaf, top: "80%", side: "l", w: 13, rot: 20 },
+];
+
+function GiftBox() {
+  const env = (rot: number, ox: number, src: string) => (
+    <g transform={`rotate(${rot} ${ox + 45} 110)`}>
+      <rect x={ox} y="40" width="90" height="130" rx="4" fill="#F7F2E6" stroke="#D9D0B8" />
+      <image href={src} x={ox + 6} y="62" width="78" height="100" preserveAspectRatio="xMidYMid meet" />
+      <path d={`M${ox} 40H${ox + 90}L${ox + 45} 95Z`} fill="#8DA273" />
+      <circle cx={ox + 45} cy="68" r="5" fill="#E9B949" />
+    </g>
+  );
+  return (
+    <svg viewBox="0 0 240 200" className="gsvg" aria-hidden>
+      <ellipse cx="120" cy="188" rx="70" ry="6" fill="rgba(0,0,0,.1)" />
+      {env(-14, 30, IMG.b)}
+      {env(16, 120, IMG.a)}
+    </svg>
+  );
+}
+
+/* ============ CSS ============ */
+const TEXTURE =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .4 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
+/*
+  Co giãn: --u là "1 đơn vị thiết kế" (thiết kế gốc rộng 460). Cột rộng bao nhiêu thì --u tự co theo
+  (cqw = % chiều rộng cột), tối đa 1.5px để màn hình lớn không bị phóng quá to.
+  Chữ nhỏ có mức sàn bằng px để điện thoại vẫn đọc được.
+*/
 const CSS = `
-.fo{min-height:100vh;background:var(--page);color:var(--ink);font-family:var(--f-serif),Georgia,serif}
-.fo *{box-sizing:border-box}
-.fo h1,.fo h2,.fo h3,.fo p{margin:0;font-weight:400}
-.col{width:100%;max-width:var(--col-w,880px);margin:0 auto;container-type:inline-size;background:var(--paper);position:relative;overflow:hidden;border-left:1px solid #F3E5D2;border-right:1px solid #F3E5D2}
-.up{text-transform:uppercase}
-.dim{color:var(--dim)}
-.sn{font-family:var(--f-sans),sans-serif;font-weight:300}
+.bt{min-height:100vh;background:var(--page);color:var(--ink);font-family:var(--f-serif),Georgia,serif}
+.bt *{box-sizing:border-box}
+.bt h1,.bt h2,.bt h3,.bt p{margin:0;font-weight:400}
+.col{
+  --u:min(calc(100cqw / 460),1.5px);
+  --xs:max(10px,calc(var(--u)*10));
+  --s:max(11px,calc(var(--u)*11));
+  --m:max(12.5px,calc(var(--u)*13));
+  --l:max(14px,calc(var(--u)*17));
+  --pad:max(18px,calc((100cqw - var(--u)*460)/2 + var(--u)*28));
+  width:100%;max-width:var(--col-w,880px);margin:0 auto;container-type:inline-size;position:relative;overflow:hidden;
+  background-color:var(--paper);border-inline:1px solid #EADFCA;box-shadow:0 0 50px rgba(120,110,80,.12)
+}
+.gold{color:var(--gold)}
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
-/* HERO: mọi kích thước tính theo chiều rộng cột (cqw) nên luôn đúng tỉ lệ ở mọi màn hình */
-.hero{position:relative;height:104.7cqw;text-align:center}
-.hero>*{position:absolute}
-.disc{top:0;left:1.6%;right:1.6%;height:48.4cqw;background:var(--deep);border-radius:0 0 50% 50%/0 0 100% 100%}
-.wl{top:6.2cqw;left:0;right:0;font-size:max(9px,1.4cqw);letter-spacing:.45em;color:var(--mint);text-transform:uppercase;font-family:var(--f-display),serif}
-.nr{top:14.6cqw;left:0;right:0;transform:translateY(-50%);display:grid;grid-template-columns:1fr 12cqw 1fr;align-items:center;padding:0 5.2cqw}
-.nr small{display:block;font-family:var(--f-sans),sans-serif;font-size:max(11px,1.75cqw);color:#fff;text-transform:capitalize;margin-bottom:.5cqw}
-.nr b{display:block;font-weight:400;font-size:max(15px,2.9cqw);color:#fff;text-transform:uppercase;letter-spacing:.01em}
-.xi{font-size:max(40px,9.6cqw);line-height:1;color:var(--mint);font-weight:700;font-family:"Noto Sans TC","Noto Serif TC","SimHei","Microsoft YaHei",sans-serif}
-.arc{top:24.5cqw;left:50%;transform:translateX(-50%);width:36cqw;height:auto;overflow:visible}
-.arch{top:28.7cqw;left:50%;transform:translateX(-50%);width:41.3cqw;aspect-ratio:535/900;border-radius:999px 999px 0 0;background-size:cover;background-position:center;box-shadow:0 20px 50px -25px rgba(11,31,12,.6)}
+/* ảnh hoa lá: mix-blend-mode làm nền trắng của ảnh hòa vào giấy */
+.fl{position:absolute;z-index:1;pointer-events:none;height:auto;mix-blend-mode:multiply;user-select:none}
+.fl.ghost{opacity:.12}
 
-/* BANNER + BODY */
-.bn{background:var(--ink);color:#fff;font-family:var(--f-serif),serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:22px;padding:20px 12px;text-align:center}
-.pad{padding:44px 24px 60px;text-align:center}
-.hd{font-size:26px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.sec{position:relative;z-index:2;padding:calc(var(--u)*44) var(--pad);text-align:center}
+.hd{font-weight:700;font-size:var(--l);letter-spacing:.03em;text-transform:uppercase;color:var(--ink);margin-bottom:calc(var(--u)*22)}
 
-/* THÔNG TIN LỄ CƯỚI */
-.pr{display:grid;grid-template-columns:1fr 1px 1fr;gap:14px;align-items:center;margin-bottom:40px}
-.pr i{width:1px;height:92px;background:var(--ink)}
-.pr .l{font-size:15px;color:var(--dim);margin-bottom:8px}
-.pr b{display:block;font-size:16px;font-weight:700;line-height:1.9}
-.pr small{display:block;font-size:13px;color:var(--dim);margin-top:6px;line-height:1.6}
-.ann{font-size:20px;line-height:1.8;letter-spacing:.04em}
-.nm{font-family:var(--f-display),serif;font-size:clamp(46px,13vw,64px);line-height:1.1;margin-top:44px;font-weight:500;color:var(--ink)}
-.rk{font-size:14px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);margin-top:20px}
-.amp{font-family:var(--f-display),serif;font-size:44px;color:#8A8A80;margin:20px 0 0}
-.pt{width:150px;height:200px;border-radius:999px 999px 12px 12px;object-fit:cover;display:block;margin:40px auto 0}
-.cer{font-size:21px;line-height:1.7;letter-spacing:.04em;margin:70px 0 14px;text-transform:uppercase}
-.at{font-size:16px;letter-spacing:.04em}
-.dr{display:flex;align-items:center;justify-content:center;gap:22px;margin:28px 0 18px}
-.dr b{font-family:var(--f-display),serif;font-size:60px;font-weight:400;line-height:1}
-.dr span{font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:#555}
-.dr i{width:1px;height:44px;background:#8A8A80}
-.yr{font-family:var(--f-display),serif;font-size:26px;color:#555}
-.lu{font-size:14px;color:#555;margin-top:14px}
+/* HERO */
+.hero{padding-top:calc(var(--u)*34);padding-bottom:calc(var(--u)*30)}
+.wo{font-size:var(--xs);letter-spacing:.12em;color:var(--gold);text-transform:uppercase;font-weight:600}
+.wreath{position:relative;width:calc(var(--u)*340);max-width:100%;aspect-ratio:1090/1440;margin:calc(var(--u)*30) auto 0}
+.wreath img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.wn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*12);font-family:var(--f-display),serif;font-size:max(18px,calc(var(--u)*25));letter-spacing:.02em;text-transform:uppercase;color:var(--ink);padding:0 18%;text-align:center}
+.wn .amp{font-style:italic;font-size:max(17px,calc(var(--u)*22));text-transform:none;color:#8A9A72}
+.hero-bg{animation:bt-fade 1.2s ease both}
+@keyframes bt-fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* THÔNG TIN */
+.pr{display:grid;grid-template-columns:1fr 1px 1fr;gap:calc(var(--u)*14);align-items:center;margin-bottom:calc(var(--u)*22)}
+.pr i{width:1px;height:calc(var(--u)*50);background:var(--ink);opacity:.8}
+.pr .l{font-size:var(--xs);color:var(--gold);margin-bottom:calc(var(--u)*5)}
+.pr b{display:block;font-size:var(--s);font-weight:700;line-height:1.7;color:var(--ink)}
+.pr small{display:block;font-size:var(--xs);color:var(--gold);margin-top:3px}
+.inv{font-size:var(--m);line-height:1.6;text-transform:uppercase;color:var(--ink)}
+.pt{width:calc(var(--u)*130);height:calc(var(--u)*170);border-radius:999px 999px 10px 10px;object-fit:cover;display:block;margin:calc(var(--u)*22) auto 0}
+.nm{font-family:var(--f-display),serif;font-size:max(30px,calc(var(--u)*42));line-height:1.15;color:var(--ink);margin-top:calc(var(--u)*20)}
+.amp2{display:block;font-family:var(--f-display),serif;font-style:italic;font-size:max(24px,calc(var(--u)*28));color:#8A9A72;margin-top:6px}
+.cer{font-size:var(--m);line-height:1.7;text-transform:uppercase;color:var(--ink);margin:calc(var(--u)*22) 0 calc(var(--u)*8)}
+.meta{display:flex;justify-content:center;gap:calc(var(--u)*56);font-size:var(--xs);letter-spacing:.04em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.dt{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*10);margin:4px 0 6px;font-family:var(--f-display),serif}
+.dt b{font-size:max(34px,calc(var(--u)*42));font-weight:400;line-height:1;color:var(--ink)}
+.dt i{width:1px;height:calc(var(--u)*36);background:var(--ink)}
+.dt div{display:flex;flex-direction:column;text-align:left;font-size:var(--s);line-height:1.5;text-transform:uppercase;color:var(--gold)}
+.lu{font-size:var(--xs);text-transform:uppercase;color:var(--gold);font-weight:600}
 
 /* ALBUM */
-.cf{position:relative;height:520px;perspective:1100px;margin:0 auto}
-.cf .s{position:absolute;left:50%;top:14px;width:270px;height:440px;margin-left:-135px;border-radius:14px;background-size:cover;background-position:center;transition:transform .6s,opacity .6s;cursor:pointer;box-shadow:0 22px 40px -20px rgba(33,59,39,.55)}
-.cf .nv{position:absolute;top:50%;z-index:20;width:40px;height:40px;margin-top:-20px;border-radius:50%;border:0;background:rgba(60,60,55,.75);color:#fff;font-size:20px;cursor:pointer}
-.dots{display:flex;gap:9px;justify-content:center;margin-top:16px}
-.dots button{width:9px;height:9px;border-radius:99px;border:0;padding:0;background:#E3DED6;cursor:pointer;transition:width .3s}
-.dots button.on{width:34px;background:#C9C5BD}
-
-@container (max-width:560px){.cf{height:420px}.cf .s{width:215px;height:340px;margin-left:-108px}}
+.cf{position:relative;height:calc(var(--u)*290);perspective:1000px;margin:0 auto}
+.cf .s{position:absolute;left:50%;top:calc(var(--u)*14);width:calc(var(--u)*170);height:calc(var(--u)*225);margin-left:calc(var(--u)*-85);border-radius:12px;background-size:cover;background-position:center;transition:transform .6s,opacity .6s;cursor:pointer;box-shadow:0 18px 30px -16px rgba(40,50,30,.6)}
+.cf .nv{position:absolute;top:50%;z-index:20;width:26px;height:26px;margin-top:-13px;border-radius:50%;border:0;background:rgba(90,90,80,.75);color:#fff;font-size:15px;line-height:1;cursor:pointer}
+.cnt{font-size:var(--xs);letter-spacing:.1em;color:#A9A290;margin-top:calc(var(--u)*6)}
 
 /* TIỆC */
-.pt1{font-size:21px;letter-spacing:.03em;text-transform:uppercase;margin-bottom:12px}
-.tm{font-size:32px;font-weight:700;margin:6px 0 10px}
-.kh{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#555;margin-top:30px}
-.cdn{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:420px;margin:40px auto 0}
-.cdn div{background:#fff;border-radius:12px;padding:14px 0;box-shadow:0 8px 24px -18px rgba(33,59,39,.5)}
-.cdn b{display:block;font-size:26px;font-weight:600}
-.cdn span{font-size:12px;color:var(--dim)}
-.cal{background:#fff0;border:1px solid #E4DCCB;border-radius:12px;margin:26px auto 22px;max-width:340px;overflow:hidden;font-family:var(--f-sans),sans-serif;font-weight:300}
-.cal h3{padding:14px;font-size:15px;font-weight:500;border-bottom:1px solid #E4DCCB}
-.cal .g{display:grid;grid-template-columns:repeat(7,1fr);padding:0 4px 10px}
-.cal .w{padding:10px 0;font-size:13px;color:#555;border-bottom:2px solid var(--ink);margin-bottom:8px}
-.cal i{font-style:normal;padding:12px 0;position:relative;font-size:14px}
-.cal .on:before{content:"♥";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;color:var(--ink)}
+.pt1{font-size:var(--m);font-weight:700;text-transform:uppercase;color:var(--ink);margin-bottom:calc(var(--u)*10)}
+.cd-t{font-size:var(--l);text-transform:uppercase;color:var(--gold);margin:calc(var(--u)*22) 0 calc(var(--u)*8);font-weight:500}
+.cd{font-size:var(--m);font-weight:700;color:var(--gold)}
+.two{display:flex;gap:calc(var(--u)*34);justify-content:center;margin:calc(var(--u)*20) 0 calc(var(--u)*24)}
+.two small{display:block;font-size:var(--xs);letter-spacing:.04em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
+.two b{font-size:var(--m);font-weight:700;color:var(--ink)}
+.cal{border:1px solid #E1D8C3;border-radius:8px;width:calc(var(--u)*260);max-width:100%;margin:0 auto calc(var(--u)*14);overflow:hidden}
+.cal h3{padding:calc(var(--u)*10);font-family:var(--f-script),cursive;font-size:max(16px,calc(var(--u)*18));color:var(--ink)}
+.cal .g{display:grid;grid-template-columns:repeat(7,1fr);padding:0 6px 8px;font-family:var(--f-sans),sans-serif;font-weight:300}
+.cal .w{padding:6px 0;font-size:var(--xs);color:#A9A290;margin-bottom:2px}
+.cal i{font-style:normal;padding:calc(var(--u)*7) 0;position:relative;font-size:var(--s);color:var(--ink)}
+.cal .on:before{content:"♥";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:max(28px,calc(var(--u)*32));color:var(--ink)}
 .cal u{position:relative;text-decoration:none}
-.cal .on u{color:#fff;font-weight:600;font-size:12px}
-.lnk{color:var(--ink);text-decoration:underline;text-underline-offset:6px;font-size:15px;font-family:var(--f-sans),sans-serif;font-weight:300}
-.btn{display:inline-block;border:0;cursor:pointer;background:var(--ink);color:#fff;border-radius:14px;padding:16px 26px;font-family:var(--f-serif),serif;font-weight:700;font-size:17px;letter-spacing:.03em;text-transform:uppercase;text-decoration:none;transition:filter .2s}
-.btn:hover{filter:brightness(1.15)}
-.btn.pill{border-radius:999px;padding:14px 30px;font-family:var(--f-sans),sans-serif;font-weight:500;font-size:15px}
-.mapbox{display:block;width:86%;height:min(442px,72cqw);border:0;border-radius:18px;margin:34px auto 0}
-.dir{display:inline-flex;align-items:center;gap:10px;margin-top:22px;color:var(--ink);font-weight:700;font-size:17px;text-decoration:none}
-.dc{display:flex;gap:26px;justify-content:center;margin-top:26px}
-.dc i{width:48px;height:48px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
-.tl{max-width:340px;margin:0 auto;position:relative}
-.tl:before{content:"";position:absolute;left:50%;top:14px;bottom:14px;width:1px;background:var(--ink);opacity:.5}
-.tl div{display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;padding:16px 0;font-size:18px}
-.tl div span:first-child{text-align:right;padding-right:18px;font-weight:700}
-.tl div i{width:12px;height:12px;border-radius:50%;background:var(--ink);justify-self:center}
-.tl div span:last-child{text-align:left;padding-left:18px}
+.cal .on u{color:#fff;font-weight:600}
+.lnk{color:var(--ink);text-decoration:underline;text-underline-offset:4px;font-size:var(--s);font-family:var(--f-sans),sans-serif;font-weight:300}
+.btn{display:inline-block;border:0;cursor:pointer;background:var(--ink);color:#fff;border-radius:999px;padding:max(9px,calc(var(--u)*9)) max(20px,calc(var(--u)*22));font-family:var(--f-serif),serif;font-weight:700;font-size:var(--s);letter-spacing:.02em;text-transform:uppercase;text-decoration:none;transition:filter .2s}
+.btn:hover{filter:brightness(1.12)}
+.btn.lg{padding:12px 28px;font-size:13px}
+
+/* ĐỊA ĐIỂM + DRESS */
+.vn{font-size:var(--s);color:var(--gold);line-height:1.6}
+.mapbox{display:block;width:100%;max-width:calc(var(--u)*360);height:calc(var(--u)*200);min-height:170px;border:0;border-radius:4px;margin:calc(var(--u)*14) auto 0}
+.dir{display:inline-flex;align-items:center;gap:6px;margin-top:calc(var(--u)*12);color:var(--ink);font-weight:700;font-size:var(--s);text-decoration:none}
+.dc{display:flex;gap:calc(var(--u)*12);justify-content:center;margin-top:calc(var(--u)*14)}
+.dc i{width:max(24px,calc(var(--u)*28));height:max(24px,calc(var(--u)*28));border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+
+/* LỊCH TRÌNH */
+.tl{max-width:calc(var(--u)*360);margin:0 auto;position:relative}
+.tl:before{content:"";position:absolute;left:50%;top:10px;bottom:10px;width:2px;background:var(--ink);opacity:.85;transform:translateX(-1px)}
+.tl div{display:grid;grid-template-columns:1fr 20px 1fr;align-items:center;padding:calc(var(--u)*12) 0;font-size:var(--s);color:var(--gold)}
+.tl div span:first-child{text-align:right;padding-right:calc(var(--u)*14)}
+.tl div i{width:8px;height:8px;border-radius:50%;background:var(--ink);justify-self:center;position:relative}
+.tl div span:last-child{text-align:left;padding-left:calc(var(--u)*14);line-height:1.4}
 
 /* LƯU BÚT */
-.fc,.wl2{max-width:590px;margin-left:auto;margin-right:auto}
-.fc{background:#fff;border-radius:14px;padding:28px 30px;box-shadow:0 18px 40px -26px rgba(33,59,39,.45);text-align:left}
-.fc input,.fc textarea{display:block;width:100%;border:1px solid #E6E2DA;border-radius:10px;padding:16px 18px;font-family:var(--f-sans),sans-serif;font-weight:300;font-size:15px;color:#333;background:#fff;resize:none}
-.fc input{margin-bottom:14px}
+.fc{max-width:calc(var(--u)*320);margin:0 auto;text-align:left}
+.fc input,.fc textarea{display:block;width:100%;border:1.5px solid var(--ink);border-radius:3px;padding:max(8px,calc(var(--u)*9)) max(10px,calc(var(--u)*11));font-family:var(--f-sans),sans-serif;font-weight:300;font-size:max(13px,calc(var(--u)*11));color:#333;background:transparent;resize:none}
+.fc input{margin-bottom:calc(var(--u)*10)}
 .fc input::placeholder,.fc textarea::placeholder{color:#B5B0A8}
-.fc .rw{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
-.wand{width:48px;height:42px;border:0;border-radius:8px;background:#EDEDED;font-size:20px;cursor:pointer}
-.wl2{margin-top:22px;display:grid;gap:12px}
-.wi{background:#fff;border-radius:12px;padding:20px 22px;text-align:left;box-shadow:0 8px 24px -20px rgba(33,59,39,.5)}
-.wi .tp{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
-.wi b{font-weight:400;font-size:18px}
-.wi time{font-family:var(--f-sans),sans-serif;font-weight:300;font-size:12px;color:#AAA}
-.wi p{margin-top:10px;font-family:var(--f-sans),sans-serif;font-weight:300;font-size:15px;color:#666;line-height:1.6;overflow-wrap:anywhere}
+.fc .rw{display:flex;justify-content:space-between;align-items:center;margin-top:calc(var(--u)*10)}
+.wand{width:34px;height:26px;border:0;border-radius:4px;background:#E9E5DA;font-size:12px;cursor:pointer}
+.wbox{position:relative;max-width:calc(var(--u)*320);margin:calc(var(--u)*18) auto 0}
+.wl2{max-height:calc(var(--u)*290);overflow-y:auto;display:grid;gap:calc(var(--u)*8);padding-right:34px;scrollbar-width:thin;scrollbar-color:#D8CBA8 transparent}
+.wl2::-webkit-scrollbar{width:6px}
+.wl2::-webkit-scrollbar-thumb{background:#D8CBA8;border-radius:6px}
+.wi{border:1px solid #E1D8C3;background:rgba(255,255,255,.35);border-radius:3px;padding:calc(var(--u)*10) calc(var(--u)*12);text-align:left}
+.wi .tp{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.wi b{font-weight:700;font-size:var(--s);color:var(--ink)}
+.wi time{font-family:var(--f-sans),sans-serif;font-weight:300;font-size:10px;color:#C4B994;white-space:nowrap}
+.wi p{margin-top:calc(var(--u)*6);font-family:var(--f-sans),sans-serif;font-weight:300;font-size:max(12px,calc(var(--u)*10));color:var(--gold);line-height:1.5;overflow-wrap:anywhere}
+.tri{position:absolute;right:2px;width:24px;height:20px;border:0;background:none;padding:0;cursor:pointer;color:#D8CBA8}
+.tri.u{top:0}.tri.d{bottom:0}
 
-/* QUÀ + MODAL + NHẠC */
-.gb{background:none;border:0;cursor:pointer;display:block;margin:30px auto 0;color:inherit}
-.gb svg{animation:bob 3s ease-in-out infinite alternate}
+/* QUÀ */
+.gb{background:none;border:0;cursor:pointer;display:block;margin:8px auto 0;color:inherit}
+.gsvg{width:calc(var(--u)*240);max-width:70vw;animation:bob 3s ease-in-out infinite alternate}
 @keyframes bob{to{transform:translateY(-6px)}}
-.gb small{display:block;margin-top:6px;font-family:var(--f-sans),sans-serif;font-weight:500;font-size:13px;color:#888}
-.cl{font-size:20px;line-height:1.6;color:#555;margin-top:70px}
-.modal{position:fixed;inset:0;z-index:70;background:rgba(11,31,12,.6);display:flex;align-items:center;justify-content:center;padding:20px}
-.box{width:100%;max-width:380px;background:#fff;color:var(--ink);border-radius:18px;padding:26px;text-align:left}
-.box h3{text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:17px;margin-bottom:18px}
-.box label{display:block;font-size:14px;margin-bottom:14px}
-.box input,.box select{width:100%;margin-top:4px;padding:11px 12px;border:1px solid #E6E2DA;border-radius:10px;font:inherit;background:#fff}
-.seg{display:flex;gap:10px;margin-bottom:14px}
-.seg label{flex:1;margin:0;text-align:center;border:1px solid #D9D2C3;border-radius:10px;padding:10px 4px;cursor:pointer;font-size:14px}
+.gb small{display:block;margin-top:4px;font-family:var(--f-sans),sans-serif;font-weight:500;font-size:var(--xs);color:var(--ink)}
+.cl{font-size:var(--s);line-height:1.6;color:var(--ink);font-weight:600;margin-top:calc(var(--u)*18)}
+
+/* DẢI HOA CHÂN TRANG */
+.foot{position:relative;z-index:2;height:calc(var(--u)*170);margin-top:calc(var(--u)*-20);overflow:hidden}
+.foot img{position:absolute;bottom:-6%;height:100%;width:auto;mix-blend-mode:multiply}
+
+/* MODAL + NHẠC */
+.modal{position:fixed;inset:0;z-index:70;background:rgba(40,50,30,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.box{width:100%;max-width:360px;max-height:92vh;overflow:auto;background:var(--paper);color:var(--ink);border-radius:14px;padding:24px;text-align:left}
+.box h3{text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:15px;margin-bottom:16px}
+.box label{display:block;font-size:13px;margin-bottom:12px}
+.box input,.box select{width:100%;margin-top:4px;padding:10px 12px;border:1px solid #D9D2C3;border-radius:8px;font:inherit;background:#fff}
+.seg{display:flex;gap:10px;margin-bottom:12px}
+.seg label{flex:1;margin:0;text-align:center;border:1px solid #D9D2C3;border-radius:8px;padding:9px 4px;cursor:pointer;font-size:13px}
 .seg label.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .seg input{position:absolute;opacity:0;width:0}
-.qr{width:190px;height:190px;margin:14px auto;border:1px dashed var(--ink);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:12px;text-align:center;color:var(--dim)}
+.qr{width:180px;height:180px;margin:12px auto;border:1px dashed var(--ink);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:12px;text-align:center;color:var(--gold)}
 .qr img{width:100%;height:100%;object-fit:contain}
-.mus{position:fixed;right:18px;bottom:18px;z-index:60;width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.18);background:radial-gradient(circle at 35% 30%,#3E6A4E,#1B3425);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.mus{position:fixed;right:18px;bottom:18px;z-index:60;width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:radial-gradient(circle at 35% 30%,#8DA273,#43553A);color:#fff;font-size:18px;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.3)}
 .mus.on{animation:spin 6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.cf .s,.dots button,.gb svg,.mus.on{transition:none;animation:none}}
 
-/* Botanical theme: warm paper, olive typography, delicate floral margins */
-.col{background-color:#f8f5ef;background-image:radial-gradient(ellipse at 18% 48%,rgba(137,153,109,.10),transparent 25%),radial-gradient(ellipse at 96% 72%,rgba(113,136,94,.12),transparent 18%),repeating-linear-gradient(12deg,transparent 0px,rgba(156,140,108,.025) 2px,transparent 5px)}
-.bn{background:transparent;color:#687c52;font-size:26px;padding:24px 12px}
-.hd{color:#687c52}
-.pad{position:relative}
-.pad:before,.pad:after{content:"";position:absolute;pointer-events:none;bottom:0;width:145px;height:75%;opacity:.20;background-repeat:no-repeat;background-position:bottom;background-size:contain}
-.pad:before{left:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 300'%3E%3Cg fill='none' stroke='%238b9b79' stroke-width='2'%3E%3Cpath d='M12 300 Q45 180 80 40 M38 230 Q5 170 25 110 M52 180 Q95 145 105 100'/%3E%3C/g%3E%3Cg fill='%2396a48a'%3E%3Cellipse cx='45' cy='200' rx='13' ry='30' transform='rotate(35 45 200)'/%3E%3Cellipse cx='65' cy='140' rx='12' ry='28' transform='rotate(-30 65 140)'/%3E%3Cellipse cx='80' cy='70' rx='10' ry='25'/%3E%3Cellipse cx='25' cy='115' rx='15' ry='25'/%3E%3C/g%3E%3C/svg%3E")}
-.pad:after{right:0;transform:scaleX(-1);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 300'%3E%3Cpath d='M12 300 Q45 180 80 40' fill='none' stroke='%238b9b79' stroke-width='2'/%3E%3Cg fill='%2396a48a'%3E%3Cellipse cx='45' cy='200' rx='13' ry='30'/%3E%3Cellipse cx='65' cy='140' rx='12' ry='28'/%3E%3C/g%3E%3C/svg%3E")}
-.tl div{color:#a18343}
-.tl div i{box-shadow:0 0 5px #a4af92}
-.tl:before{background:#687c52}
-.dress-swatch{border:1px solid #d7d4c9}
-
-/* HIỆU ỨNG XUẤT HIỆN */
-.rv{opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s ease}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .8s ease,transform .8s ease}
 .rv.rv-in{opacity:1;transform:none}
 
-/* Mở đầu hero (chỉ dùng CSS, không dùng JS) */
-@keyframes fo-fade{from{opacity:0}to{opacity:1}}
-@keyframes fo-arch{from{opacity:0;transform:translateX(-50%) translateY(22px)}to{opacity:1;transform:translateX(-50%)}}
-.disc{animation:fo-fade 1.1s ease both}
-.wl{animation:fo-fade 1s .25s ease both}
-.nr{animation:fo-fade 1s .45s ease both}
-.arc{animation:fo-fade 1s .7s ease both}
-.arch{animation:fo-arch 1.1s .55s ease both}
-
+/* điện thoại rất hẹp */
+@container (max-width:340px){
+  .meta{gap:calc(var(--u)*30)}
+  .wn{padding:0 14%}
+  .two{gap:calc(var(--u)*24)}
+}
 @media (prefers-reduced-motion:reduce){
+  .cf .s,.gsvg,.mus.on,.hero-bg{transition:none;animation:none}
   .rv{opacity:1;transform:none;transition:none}
-  .hero>*{animation:none!important}
 }
 `;
 
@@ -192,46 +240,29 @@ function stamp(iso: string): string {
   return `${g("hour")}:${g("minute")}:${g("second")} ${g("day")}/${g("month")}/${g("year")}`;
 }
 
-function GiftBox() {
-  return (
-    <svg viewBox="0 0 160 170" width="240" aria-hidden>
-      <defs>
-        <linearGradient id="fg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#F5E2AE" /><stop offset="1" stopColor="#C9A55E" /></linearGradient>
-      </defs>
-      <ellipse cx="80" cy="158" rx="52" ry="6" fill="rgba(0,0,0,.12)" />
-      <rect x="34" y="74" width="92" height="80" rx="3" fill="#163020" />
-      <rect x="28" y="54" width="104" height="22" rx="3" fill="#1F3E2A" />
-      <rect x="72" y="54" width="16" height="100" fill="url(#fg)" />
-      <ellipse cx="62" cy="46" rx="18" ry="10" transform="rotate(-22 62 46)" fill="url(#fg)" />
-      <ellipse cx="98" cy="46" rx="18" ry="10" transform="rotate(22 98 46)" fill="url(#fg)" />
-      <circle cx="80" cy="52" r="7" fill="#D8B66E" />
-      <text x="52" y="122" fontSize="24" textAnchor="middle" fill="#E6C98A" fontFamily="'Noto Sans TC','SimHei',sans-serif" fontWeight="700">囍</text>
-    </svg>
-  );
-}
-
 export default function BotanicalTemplate({ data, preview }: TemplateProps) {
   const W = useMemo(() => toBotanicalW(data), [data]);
   const th = { ...DEFAULTS, ...data.theme };
   const on = (k: string) => data.sections[k] !== false;
 
   const PHOTOS = data.media.photos.map((p) => p.url);
-  const MAIN = data.media.hero_url ?? data.media.cover_url ?? PHOTOS[0] ?? null; // ảnh vòm đầu thiệp
   const GROOM_IMG = data.media.groom_url;
   const BRIDE_IMG = data.media.bride_url;
+  const BG = data.media.background_url; // ảnh nền giấy (tuỳ chọn)
   const MUSIC = data.media.music_url ?? "";
   const N = PHOTOS.length || 6;
+  const dress = W.dressColors.length > 0 ? W.dressColors : DEFAULT_DRESS;
 
   const [a, setA] = useState(0);
   const [modal, setModal] = useState<null | "rsvp" | number>(null);
   const [left, setLeft] = useState<number | null>(null);
-
   const [playing, setPlaying] = useState(false);
   const audio = useRef<HTMLAudioElement>(null);
   const touch = useRef(0);
-  
+  const wishList = useRef<HTMLDivElement>(null);
+
   const root = useRef<HTMLDivElement>(null);
-  useScrollReveal(root, ".bn, .pad > *");
+  useScrollReveal(root, ".sec > *");
 
   const [rsvp, setRsvp] = useState({ name: "", attend: "yes", guests: "1" });
   const [rsvpDone, setRsvpDone] = useState(false);
@@ -252,7 +283,7 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
     return () => clearInterval(id);
   }, [d]);
 
-  // Browser autoplay blocking: enabled upon the user's first interaction
+  // Trình duyệt chặn tự phát nhạc: bật ở lần chạm đầu tiên của khách
   useEffect(() => {
     if (!MUSIC) return;
     const go = () => audio.current?.play().then(() => setPlaying(true)).catch(() => {});
@@ -267,12 +298,7 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
   };
 
   const s = left === null ? null : Math.floor(left / 1000);
-  const cdv = [
-    ["Ngày", s === null ? "–" : Math.floor(s / 86400)],
-    ["Giờ", s === null ? "–" : Math.floor((s % 86400) / 3600)],
-    ["Phút", s === null ? "–" : Math.floor((s % 3600) / 60)],
-    ["Giây", s === null ? "–" : s % 60],
-  ];
+  const countdown = s === null ? "" : `${Math.floor(s / 86400)} ngày ${Math.floor((s % 86400) / 3600)} giờ ${Math.floor((s % 3600) / 60)} phút ${s % 60} giây`;
 
   const offset = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7; // thứ Hai đầu tuần
   const cells = [...Array(offset).fill(0), ...Array.from({ length: new Date(Date.UTC(y, m, 0)).getUTCDate() }, (_, i) => i + 1)];
@@ -290,15 +316,19 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
     const ab = Math.abs(o);
     return {
       background: PHOTOS[i] ? `url(${PHOTOS[i]}) center/cover` : `linear-gradient(${150 + i * 25}deg,#CFE0D2,#7C9A86)`,
-      transform: `translateX(${o * 68}%) translateZ(${-ab * 120}px) rotateY(${-o * 28}deg)`,
-      opacity: ab > 2 ? 0 : 1 - ab * 0.3,
+      transform: `translateX(${o * 62}%) translateZ(${-ab * 110}px) rotateY(${-o * 30}deg)`,
+      opacity: ab > 2 ? 0 : 1 - ab * 0.25,
       zIndex: 10 - ab,
       pointerEvents: ab > 2 ? "none" : "auto",
     };
   };
 
-  const DateRow = () => (
-    <div className="dr"><span>{weekday}</span><i /><b>{dd}</b><i /><span>{monthLabel}</span></div>
+  const DateBlock = ({ label }: { label: string }) => (
+    <>
+      <div className="meta"><span>{label}</span><span>{weekday}</span></div>
+      <div className="dt"><b>{dd}</b><i /><div><span>{monthLabel}</span><span>{y}</span></div></div>
+      {W.lunar && <p className="lu">({W.lunar})</p>}
+    </>
   );
 
   const sendWish = () => {
@@ -317,98 +347,105 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
     setWish((w) => ({ ...w, text: SUGGEST[sug % SUGGEST.length] }));
     setSug(sug + 1);
   };
+  const scrollWishes = (dy: number) => wishList.current?.scrollBy({ top: dy, behavior: "smooth" });
 
-  const vars = {
-    "--page": th.page, "--paper": th.paper, "--ink": th.ink, "--deep": th.deep, "--mint": th.mint, "--dim": th.dim,
-  } as React.CSSProperties;
+  const vars = { "--page": th.page, "--paper": th.paper, "--ink": th.ink, "--deep": th.deep, "--gold": th.gold, "--dim": th.dim } as React.CSSProperties;
+  const colStyle: React.CSSProperties = BG
+    ? { backgroundImage: `url(${BG})`, backgroundSize: "100% auto", backgroundRepeat: "repeat-y" }
+    : { backgroundImage: TEXTURE };
+
+  const decoStyle = (c: Deco): React.CSSProperties => ({
+    top: c.top,
+    width: `${c.w}%`,
+    [c.side === "l" ? "left" : "right"]: c.ghost ? "-8%" : "-3%",
+    transform: `rotate(${c.rot ?? 0}deg)${c.side === "r" ? " scaleX(-1)" : ""}`,
+  });
 
   return (
-    <div ref={root} className={`fo ${display.variable} ${serif.variable} ${sans.variable}`} style={{ ...vars, fontFamily: "var(--f-serif),Georgia,serif" }}>
+    <div ref={root} className={`bt ${display.variable} ${serif.variable} ${sans.variable} ${script.variable}`} style={{ ...vars, fontFamily: "var(--f-serif),Georgia,serif" }}>
       <style>{CSS}</style>
       {MUSIC && <audio ref={audio} src={MUSIC} loop />}
 
-      <main className="col">
+      <main className="col" style={colStyle}>
+        {/* Hoa lá trang trí hai bên lề + hoa mờ nền */}
+        {DECOS.map((c, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={i} src={c.src} alt="" aria-hidden className={`fl ${c.ghost ? "ghost" : ""}`} style={decoStyle(c)} />
+        ))}
+
         {/* HERO */}
-        <section className="hero">
-          <div className="disc" aria-hidden />
-          <p className="wl">{WELCOME}</p>
-          <div className="nr">
-            <div><small>{W.groom.rank}</small><b>{W.groom.short}</b></div>
-            <span className="xi" aria-hidden>囍</span>
-            <div><small>{W.bride.rank}</small><b>{W.bride.short}</b></div>
+        <section className="sec hero">
+          <p className="wo">The wedding of</p>
+          <div className="wreath hero-bg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={IMG.wreath} alt="" aria-hidden />
+            <div className="wn">
+              <p>{W.groom.short}</p>
+              <span className="amp">&amp;</span>
+              <p>{W.bride.short}</p>
+            </div>
           </div>
-          <svg className="arc" viewBox="0 0 300 80" aria-label={ARC_TEXT}>
-            <defs><path id="fo-arc" d="M 22 66 A 300 300 0 0 1 278 66" /></defs>
-            <text fill={th.mint} fontSize="17" letterSpacing="4" fontFamily="var(--f-display),serif" textAnchor="middle">
-              <textPath href="#fo-arc" startOffset="50%">{ARC_TEXT}</textPath>
-            </text>
-            <text x="6" y="76" fontSize="22" fill="#fff" textAnchor="middle">✦</text>
-            <text x="294" y="76" fontSize="22" fill="#fff" textAnchor="middle">✦</text>
-          </svg>
-          <div className="arch" role="img" aria-label={`${W.groom.short} & ${W.bride.short}`}
-            style={MAIN ? { backgroundImage: `url(${MAIN})` } : { background: "linear-gradient(160deg,#CFE0D2,#7C9A86)" }} />
         </section>
 
         {/* THÔNG TIN LỄ CƯỚI */}
-        <div className="bn">Thông tin lễ cưới</div>
-        <section className="pad">
+        <section className="sec">
+          <h2 className="hd">Thông tin lễ cưới</h2>
           <div className="pr">
             {[W.groom, W.bride].flatMap((p, i) => {
               const block = (
                 <div key={`p${i}`}>
                   <p className="l">Ông Bà</p>
                   {p.parents.map((x) => <b key={x}>{x}</b>)}
-                  <small>{p.addr}</small>
+                  {p.addr && <small>{p.addr}</small>}
                 </div>
               );
               return i === 0 ? [block, <i key="sep" />] : [block];
             })}
           </div>
-          <p className="ann up">Trân trọng báo tin<br />lễ thành hôn của con chúng tôi</p>
+          <p className="inv">Kính mời quý vị đến dự bữa tiệc mừng ngày<br />chúng tôi nên duyên</p>
 
           {GROOM_IMG && <img className="pt" src={GROOM_IMG} alt={W.groom.full} />}
           <h3 className="nm">{W.groom.full}</h3>
-          <p className="rk">{W.groom.rank}</p>
-          <p className="amp">&amp;</p>
+          <span className="amp2">&amp;</span>
           {BRIDE_IMG && <img className="pt" src={BRIDE_IMG} alt={W.bride.full} />}
-          <h3 className="nm" style={{ marginTop: BRIDE_IMG ? 36 : 26 }}>{W.bride.full}</h3>
-          <p className="rk">{W.bride.rank}</p>
+          <h3 className="nm" style={{ marginTop: 6 }}>{W.bride.full}</h3>
 
-          <p className="cer">{W.ceremonyPlace || "Lễ thành hôn được cử hành tại tư gia"}</p>
-          <p className="at up">Vào lúc {W.ceremonyTime}</p>
-          <DateRow />
-          {W.lunar && <p className="lu up">({W.lunar})</p>}
+          <p className="cer">{W.ceremonyPlace || "Lễ thành hôn"}</p>
+          <DateBlock label={`Vào lúc ${W.ceremonyTime}`} />
         </section>
 
         {/* ALBUM */}
         {on("album") && (
-          <>
-            <div className="bn">Album ảnh</div>
-            <section className="pad" style={{ paddingTop: 30, paddingBottom: 44 }}>
-              <div className="cf"
-                onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
-                onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 40) setA((a + (dx < 0 ? 1 : N - 1)) % N); }}>
-                <button className="nv" style={{ left: 4 }} onClick={() => setA((a + N - 1) % N)} aria-label="Ảnh trước">‹</button>
-                {Array.from({ length: N }).map((_, i) => <div key={i} className="s" style={slide(i)} onClick={() => setA(i)} role="img" aria-label={`Ảnh cưới ${i + 1}`} />)}
-                <button className="nv" style={{ right: 4 }} onClick={() => setA((a + 1) % N)} aria-label="Ảnh sau">›</button>
-              </div>
-              <div className="dots">{Array.from({ length: N }).map((_, i) => <button key={i} className={i === a ? "on" : ""} onClick={() => setA(i)} aria-label={`Đến ảnh ${i + 1}`} />)}</div>
-            </section>
-          </>
+          <section className="sec" style={{ paddingTop: 10 }}>
+            <h2 className="hd" style={{ fontSize: "var(--m)", marginBottom: 30 }}>Album ảnh</h2>
+            <div className="cf"
+              onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
+              onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 40) setA((a + (dx < 0 ? 1 : N - 1)) % N); }}>
+              <button className="nv" style={{ left: 4 }} onClick={() => setA((a + N - 1) % N)} aria-label="Ảnh trước">‹</button>
+              {Array.from({ length: N }).map((_, i) => <div key={i} className="s" style={slide(i)} onClick={() => setA(i)} role="img" aria-label={`Ảnh cưới ${i + 1}`} />)}
+              <button className="nv" style={{ right: 4 }} onClick={() => setA((a + 1) % N)} aria-label="Ảnh sau">›</button>
+            </div>
+            <p className="cnt">{a + 1} / {N}</p>
+          </section>
         )}
 
         {/* THÔNG TIN TIỆC CƯỚI */}
-        <div className="bn">Thông tin tiệc cưới</div>
-        <section className="pad">
+        <section className="sec">
+          <h2 className="hd">Thông tin tiệc cưới</h2>
           <p className="pt1">Tiệc cưới sẽ diễn ra vào lúc:</p>
-          <p className="tm">{W.partyTime}</p>
-          <DateRow />
-          <p className="yr">{y}</p>
-          {W.lunar && <p className="lu">({W.lunar})</p>}
-          <p className="kh">Khai tiệc</p>
-          <p className="tm" style={{ fontSize: 22 }}>{W.partyTime}</p>
+          <DateBlock label={W.partyTime} />
 
-          {on("countdown") && <div className="cdn">{cdv.map(([l, v]) => <div key={l}><b>{String(v).padStart(2, "0")}</b><span>{l}</span></div>)}</div>}
+          {on("countdown") && (
+            <>
+              <h3 className="cd-t">Cùng đếm ngược</h3>
+              <p className="cd">{countdown || "…"}</p>
+            </>
+          )}
+
+          <div className="two">
+            <div><small>Đón khách</small><b>{W.guestTime}</b></div>
+            <div><small>Khai tiệc</small><b>{W.partyTime}</b></div>
+          </div>
 
           <div className="cal">
             <h3>Tháng {m} / {y}</h3>
@@ -418,74 +455,84 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
             </div>
           </div>
           <a className="lnk" href={calUrl} target="_blank" rel="noreferrer">Thêm vào lịch</a>
-          <div style={{ marginTop: 34 }}><button className="btn" onClick={() => setModal("rsvp")}>Xác nhận tham dự</button></div>
+          <div style={{ marginTop: 14 }}><button className="btn" onClick={() => setModal("rsvp")}>Xác nhận tham dự</button></div>
         </section>
 
-        {/* ĐỊA ĐIỂM + DRESS CODE */}
+        {/* ĐỊA ĐIỂM */}
         {on("map") && (
-          <>
-            <div className="bn">Tiệc cưới sẽ tổ chức tại</div>
-            <section className="pad" style={{ paddingBottom: 30 }}>
-              <p className="dim" style={{ fontSize: 16, lineHeight: 1.7 }}>{place}</p>
-              <iframe className="mapbox" title="Bản đồ" src={mapEmbed} loading="lazy" />
-              <a className="dir" href={mapUrl} target="_blank" rel="noreferrer">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M21 3 3 10.5l7 3 3 7z" /></svg>
-                Chỉ đường
-              </a>
-            </section>
-          </>
+          <section className="sec" style={{ paddingTop: 20 }}>
+            <h2 className="hd" style={{ fontSize: "var(--m)", marginBottom: 8 }}>Tiệc cưới sẽ tổ chức tại</h2>
+            <p className="vn">{W.venue}</p>
+            <p className="vn">{W.address}</p>
+            <iframe className="mapbox" title="Bản đồ" src={mapEmbed} loading="lazy" />
+            <a className="dir" href={mapUrl} target="_blank" rel="noreferrer">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 3 3 10.5l7 3 3 7z" /></svg>
+              Chỉ đường
+            </a>
+          </section>
         )}
-        {on("dresscode") && (W.dress || W.dressColors.length > 0) && (
-          <section className="pad" style={{ paddingTop: 40, paddingBottom: 50 }}>
-            <h2 className="hd">Dress code</h2>
-            {W.dress && <p className="dim" style={{ marginTop: 10, fontSize: 16 }}>{W.dress}</p>}
-            {W.dressColors.length > 0 && <div className="dc">{W.dressColors.map((c) => <i key={c} style={{ background: c }} />)}</div>}
+
+        {/* DRESS CODE */}
+        {on("dresscode") && (
+          <section className="sec" style={{ paddingTop: 20 }}>
+            <h2 className="hd" style={{ marginBottom: 4 }}>Dress code</h2>
+            {W.dress && <p className="vn">{W.dress}</p>}
+            <div className="dc">{dress.map((c) => <i key={c} style={{ background: c }} />)}</div>
           </section>
         )}
 
         {/* LỊCH TRÌNH */}
         {on("schedule") && W.schedule.length > 0 && (
-          <>
-            <div className="bn">Lịch trình ngày cưới</div>
-            <section className="pad"><div className="tl">{W.schedule.map((x, i) => <div key={i}><span>{x.t}</span><i /><span>{x.n}</span></div>)}</div></section>
-          </>
+          <section className="sec" style={{ paddingTop: 24 }}>
+            <h2 className="hd" style={{ marginBottom: 14 }}>Lịch trình ngày cưới</h2>
+            <div className="tl">{W.schedule.map((x, i) => <div key={i}><span>{x.t}</span><i /><span>{x.n}</span></div>)}</div>
+          </section>
         )}
 
         {/* SỔ LƯU BÚT */}
         {on("guestbook") && (
-          <>
-            <div className="bn">Sổ lưu bút</div>
-            <section className="pad" style={{ paddingTop: 40 }}>
-              <div className="fc">
-                <input placeholder="Nhập tên của bạn*" value={wish.name} onChange={(e) => setWish({ ...wish, name: e.target.value })} maxLength={150} />
-                <textarea rows={5} placeholder="Nhập lời chúc của bạn*" value={wish.text} onChange={(e) => setWish({ ...wish, text: e.target.value })} maxLength={1000} />
-                <div className="rw">
-                  <button className="wand" onClick={suggest} aria-label="Gợi ý lời chúc" title="Gợi ý lời chúc">🪄</button>
-                  <button className="btn pill" onClick={sendWish}>GỬI LỜI CHÚC</button>
+          <section className="sec" style={{ paddingTop: 24 }}>
+            <h2 className="hd" style={{ fontSize: "var(--m)" }}>Sổ lưu bút</h2>
+            <div className="fc">
+              <input placeholder="Nhập tên*" value={wish.name} onChange={(e) => setWish({ ...wish, name: e.target.value })} maxLength={150} />
+              <textarea rows={4} placeholder="Nhập lời chúc*" value={wish.text} onChange={(e) => setWish({ ...wish, text: e.target.value })} maxLength={1000} />
+              <div className="rw">
+                <button className="wand" onClick={suggest} aria-label="Gợi ý lời chúc" title="Gợi ý lời chúc">🪄</button>
+                <button className="btn" onClick={sendWish}>Gửi lời chúc</button>
+              </div>
+            </div>
+            {wishes.length > 0 && (
+              <div className="wbox">
+                <button className="tri u" onClick={() => scrollWishes(-140)} aria-label="Cuộn lên"><svg viewBox="0 0 24 20"><path d="M12 2 23 18H1z" fill="currentColor" /></svg></button>
+                <div className="wl2" ref={wishList}>
+                  {wishes.map((x, i) => (
+                    <div className="wi" key={i}>
+                      <div className="tp"><b>{x.name}</b><time>{stamp(x.at)}</time></div>
+                      <p>{x.text}</p>
+                    </div>
+                  ))}
                 </div>
+                <button className="tri d" onClick={() => scrollWishes(140)} aria-label="Cuộn xuống"><svg viewBox="0 0 24 20"><path d="M12 18 1 2h22z" fill="currentColor" /></svg></button>
               </div>
-              <div className="wl2">
-                {wishes.map((x, i) => (
-                  <div className="wi" key={i}>
-                    <div className="tp"><b>{x.name}</b><time>{stamp(x.at)}</time></div>
-                    <p>{x.text}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </>
+            )}
+          </section>
         )}
 
         {/* HỘP QUÀ */}
         {on("gifts") && W.gifts.length > 0 && (
-          <section className="pad" style={{ paddingTop: 30, paddingBottom: 30 }}>
-            <h2 className="hd">Hộp quà mừng</h2>
+          <section className="sec" style={{ paddingTop: 24, paddingBottom: 10 }}>
+            <h2 className="hd" style={{ fontSize: "var(--m)", marginBottom: 0 }}>Hộp quà mừng</h2>
             <button className="gb" onClick={() => setModal(0)} aria-label="Mở hộp quà mừng"><GiftBox /><small>Nhấn để mở</small></button>
           </section>
         )}
-        <section className="pad" style={{ paddingTop: 0, paddingBottom: 70 }}>
+        <section className="sec" style={{ paddingTop: 0, paddingBottom: 30 }}>
           <p className="cl">{W.closing || "Sự hiện diện của quý khách là niềm vinh hạnh của gia đình chúng tôi!"}</p>
         </section>
+
+        {/* DẢI HOA CHÂN TRANG */}
+        <div className="foot" aria-hidden>
+          <img src={IMG.footerFlower} alt="" style={{ width: "100%", left: "0%", transform: "scaleX(-1)" }} />
+        </div>
       </main>
 
       {MUSIC && (
@@ -498,11 +545,11 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
             {modal === "rsvp" && (rsvpDone ? (
               <>
                 <p style={{ textAlign: "center" }}>Cảm ơn {rsvp.name}! Gia đình đã nhận được phản hồi của bạn.</p>
-                <div style={{ textAlign: "center", marginTop: 18 }}><button className="btn pill" onClick={() => setModal(null)}>Đóng</button></div>
+                <div style={{ textAlign: "center", marginTop: 18 }}><button className="btn lg" onClick={() => setModal(null)}>Đóng</button></div>
               </>
             ) : (
               <>
-                <h3>Xác nhận tham dưssssssssssssssssssss</h3>
+                <h3>Xác nhận tham dự</h3>
                 <label>Họ và tên<input value={rsvp.name} onChange={(e) => setRsvp({ ...rsvp, name: e.target.value })} /></label>
                 <div className="seg">
                   {[["yes", "Mình sẽ đến"], ["no", "Rất tiếc, mình bận"]].map(([v, l]) => (
@@ -514,7 +561,7 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
                     <select value={rsvp.guests} onChange={(e) => setRsvp({ ...rsvp, guests: e.target.value })}>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n} người</option>)}</select>
                   </label>
                 )}
-                <div style={{ textAlign: "center" }}><button className="btn pill" onClick={sendRsvp}>Gửi xác nhận</button></div>
+                <div style={{ textAlign: "center" }}><button className="btn lg" onClick={sendRsvp}>Gửi xác nhận</button></div>
               </>
             ))}
             {typeof modal === "number" && W.gifts[modal] && (
@@ -525,8 +572,8 @@ export default function BotanicalTemplate({ data, preview }: TemplateProps) {
                 <div className="qr">{W.gifts[modal].qr ? <img src={W.gifts[modal].qr} alt="Mã QR" /> : "Chưa có ảnh QR"}</div>
                 <p style={{ fontWeight: 700 }}>{W.gifts[modal].bank}</p>
                 <p>{W.gifts[modal].no}</p>
-                <p className="dim" style={{ fontSize: 14 }}>{W.gifts[modal].name}</p>
-                <div style={{ marginTop: 18 }}><button className="btn pill" onClick={() => setModal(null)}>Đóng</button></div>
+                <p className="gold" style={{ fontSize: 14 }}>{W.gifts[modal].name}</p>
+                <div style={{ marginTop: 18 }}><button className="btn lg" onClick={() => setModal(null)}>Đóng</button></div>
               </>
             )}
           </div>
