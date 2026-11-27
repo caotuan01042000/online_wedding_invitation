@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Montserrat, Lobster } from "next/font/google";
 import "./home.css";
-import { TemplateProps } from "@/types/invitation";
 
 const sans = Montserrat({ subsets: ["vietnamese", "latin"], weight: ["300", "400", "500", "700"], variable: "--f-sans" });
 const script = Lobster({ subsets: ["vietnamese", "latin"], weight: "400", variable: "--f-script" });
@@ -69,21 +68,6 @@ export default function HomePage() {
 
   return (
     <div className={`hm ${sans.variable} ${script.variable}`}>
-      {/* HEADER */}
-      <header className="top">
-        <Link href="/home" className="logo"><span className="mark">♥</span><span className="script">Thiệp Cưới</span></Link>
-        <nav>
-          <a href="#mau">Mẫu thiệp</a>
-          <a href="#buoc">Cách làm</a>
-          <a href="#faq">Hỏi đáp</a>
-        </nav>
-        <div className="who">
-          {me && <span className="hello">Xin chào, {me.full_name || me.username}</span>}
-          {me?.role === "admin" && <Link href="/admin" className="btn ghost sm">Trang quản trị</Link>}
-          <button className="btn sm" onClick={logout}>Đăng xuất</button>
-        </div>
-      </header>
-
       {/* HERO */}
       <section className="hero">
         <div className="hero-txt">
@@ -92,7 +76,7 @@ export default function HomePage() {
           <p className="dim">Mảnh ghép hiện đại của truyền thống mời cưới: gửi tấm chân tình nhanh hơn, xa hơn, đến nhiều người hơn.</p>
           <div className="cta">
             <Link href="/template" className="btn lg">Tạo thiệp ngay</Link>
-            <a href="#mau" className="btn ghost lg">Xem mẫu</a>
+            <a href="/list-templates" className="btn ghost lg">Xem mẫu</a>
           </div>
         </div>
         <div className="phones" aria-hidden>
