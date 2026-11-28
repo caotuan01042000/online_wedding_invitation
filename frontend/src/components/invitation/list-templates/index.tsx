@@ -2,13 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-import { Montserrat, Lobster } from "next/font/google";
 import "./list-templates.css";
 
-
-const sans = Montserrat({ subsets: ["vietnamese", "latin"], weight: ["300", "400", "500", "700"], variable: "--f-sans" });
-const script = Lobster({ subsets: ["vietnamese", "latin"], weight: "400", variable: "--f-script" });
 
 interface Me { username: string; full_name: string | null; role: "admin" | "user" }
 
@@ -57,7 +52,7 @@ export default function ListTemplate() {
   };
 
   return (
-    <div className={`hm ${sans.variable} ${script.variable}`}>
+    <div>
       {/* DANH SÁCH MẪU */}
       <section id="mau" className="gallery">
         <div className="gallery-heading">

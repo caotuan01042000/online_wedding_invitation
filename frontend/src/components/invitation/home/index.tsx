@@ -3,21 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Montserrat, Lobster } from "next/font/google";
 import "./home.css";
-
-const sans = Montserrat({ subsets: ["vietnamese", "latin"], weight: ["300", "400", "500", "700"], variable: "--f-sans" });
-const script = Lobster({ subsets: ["vietnamese", "latin"], weight: "400", variable: "--f-script" });
 
 interface Me { username: string; full_name: string | null; role: "admin" | "user" }
 
-// Mẫu thật (ready) trỏ tới trang xem thử. Sau này thay bằng API công khai /api/public/templates.
 const TEMPLATES = [
-  { code: "rose", name: "Hồng phấn", a: "#2a0a1a", b: "#ff2d95", href: "/", ready: true },
-  { code: "dragon", name: "Rồng phượng", a: "#000000", b: "#c2185b", href: "/template", ready: true },
-  { code: "green", name: "Song Hỷ - Hồng", a: "#0a0a0a", b: "#ff7ab8", href: "", ready: false },
-  { code: "cream", name: "Tối giản - Đen", a: "#111111", b: "#ff9ccd", href: "", ready: false },
-  { code: "peony", name: "Mẫu đơn", a: "#1a0612", b: "#ff2d95", href: "", ready: false },
+  { code: "rose",   name: "Hồng phấn",     a: "#8A9A72", b: "#43553A", href: "/", ready: true },
+  { code: "dragon", name: "Rồng phượng",   a: "#43553A", b: "#A18343", href: "/template", ready: true },
+  { code: "green",  name: "Song Hỷ - Hồng", a: "#687C52", b: "#C9B27A", href: "", ready: false },
+  { code: "cream",  name: "Tối giản - Đen", a: "#A18343", b: "#EBD9A8", href: "", ready: false },
+  { code: "peony",  name: "Mẫu đơn",       a: "#43553A", b: "#8A9A72", href: "", ready: false },
 ];
 
 const STEPS = [
@@ -67,7 +62,7 @@ export default function HomePage() {
   const cur = TEMPLATES[a];
 
   return (
-    <div className={`hm ${sans.variable} ${script.variable}`}>
+    <div>
       {/* HERO */}
       <section className="hero">
         <div className="hero-txt">

@@ -1,0 +1,74 @@
+/* Theme botanical: kem + xanh rêu + vàng đồng. Dùng chung cho home, list-templates, header */
+body .hm{
+  --bg:#FAF1E6; --bg2:#F4EADB; --card:#FFFBF5;
+  --pk:#687C52; --pk2:#8A9A72; --deep:#43553A; --gold:#A18343;
+  --txt:#3A4A2E; --dim:#857545; --line:#E6DCC6;
+  background:var(--bg); color:var(--txt);
+}
+body .hm h1, body .hm h2{color:var(--deep)}
+body .hm .pk{color:var(--pk); text-shadow:none}
+body .hm .dim{color:var(--dim)}
+
+/* header */
+body .hm .top{background:rgba(250,241,230,.92); border-bottom:1px solid var(--line)}
+body .hm .mark{background:var(--pk); color:#fff; box-shadow:none}
+body .hm .top nav a{color:var(--dim)}
+body .hm .top nav a:hover{color:var(--deep)}
+body .hm .hello{color:var(--dim)}
+
+/* nút */
+body .hm .btn{background:var(--pk); color:#fff; border:1px solid var(--pk)}
+body .hm .btn:hover{background:var(--deep); border-color:var(--deep); filter:none}
+body .hm .btn.ghost{background:none; color:var(--deep); border:1px solid var(--pk)}
+body .hm .btn.ghost:hover{background:rgba(104,124,82,.12)}
+body .hm .btn.lg{box-shadow:0 10px 30px -12px rgba(67,85,58,.55)}
+
+/* hero */
+body .hm .hero:before{background:radial-gradient(closest-side,rgba(138,154,114,.28),transparent)}
+body .hm .quote{color:var(--gold)}
+body .hm .phone{border-color:var(--line); background:linear-gradient(170deg,#687C52,#43553A); box-shadow:0 30px 50px -25px rgba(67,85,58,.55)}
+body .hm .p2{background:linear-gradient(170deg,#A18343,#7A6330)}
+body .hm .phone i{background:#FAF1E6}
+body .hm .phone b{background:rgba(255,255,255,.85)}
+body .hm .phone em{background:rgba(250,241,230,.55)}
+
+/* section */
+body .hm .sec.dark{background:var(--bg2)}
+body .hm .badge{color:var(--deep); border-color:var(--pk); background:rgba(104,124,82,.1)}
+body .hm .ic{background:var(--pk); color:#fff; box-shadow:none}
+body .hm .steps:before{background:var(--line)}
+body .hm .ticks li{color:var(--txt)}
+body .hm .ticks li:before{background:rgba(104,124,82,.16); color:var(--deep)}
+
+/* carousel */
+body .hm .cf .s{border:1px solid var(--line); box-shadow:0 24px 40px -22px rgba(67,85,58,.5)}
+body .hm .nv{background:var(--pk); color:#fff; box-shadow:none}
+body .hm .dots button{background:var(--line)}
+body .hm .dots button.on{background:var(--pk)}
+
+/* thẻ thống kê, FAQ, footer */
+body .hm .stat{background:var(--card); border:1px solid var(--line); box-shadow:0 20px 50px -30px rgba(67,85,58,.4)}
+body .hm .stat>p{color:var(--deep)}
+body .hm .big b{color:var(--pk)}
+body .hm .bar{background:var(--line)}
+body .hm .bar i{background:linear-gradient(90deg,var(--pk),var(--pk2))}
+body .hm .trio div{background:rgba(104,124,82,.08)}
+body .hm .trio .ok b{color:#5E7A3C}
+body .hm .trio .no b{color:#B5533C}
+body .hm .faq{background:var(--card); border-color:var(--line)}
+body .hm .faq details{border-bottom-color:var(--line)}
+body .hm .faq summary:after{color:var(--pk)}
+body .hm .foot{background:var(--bg2); border-top:1px solid var(--line)}
+
+/* gallery mẫu thiệp (list-templates) */
+body .hm .gallery-heading h1{color:var(--deep)}
+body .hm .gallery-heading p{color:var(--dim)}
+body .hm .gallery-heading small{color:var(--gold)}
+body .hm .template-card{box-shadow:0 14px 30px -20px rgba(67,85,58,.55)}
+body .hm .template-art{--paper:#FAF1E6; --ink:#687C52}
+body .hm .template-badge{background:var(--gold)}
+body .hm .theme-1,body .hm .theme-5{--paper:#687C52; --ink:#FAF1E6}
+body .hm .theme-2,body .hm .theme-6{--paper:#43553A; --ink:#EBD9A8}
+body .hm .theme-3,body .hm .theme-7{--paper:#F4EADB; --ink:#A18343}
+body .hm .theme-4,body .hm .theme-8{--paper:#E9E3D0; --ink:#43553A}
+body .hm .theme-9{--paper:#8A9A72; --ink:#FAF1E6}
