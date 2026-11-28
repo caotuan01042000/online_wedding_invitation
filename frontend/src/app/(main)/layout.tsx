@@ -1,6 +1,7 @@
 
 import { Lobster, Montserrat } from "next/font/google";
 import Header from "@/components/Header";
+import "@/styles/botanical-theme.css";
 
 const sans = Montserrat({
   subsets: ["vietnamese", "latin"],

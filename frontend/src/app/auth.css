@@ -4,9 +4,9 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: #FDEEF2;
+    background: #F1EDE3;
     font-family: system-ui, sans-serif;
-    color: #3B1F2B
+    color: #3A4A2E
 }
 
 .lg form {
@@ -15,7 +15,7 @@
     background: #fff;
     border-radius: 20px;
     padding: 32px;
-    box-shadow: 0 20px 60px -30px rgba(184, 58, 99, .5)
+    box-shadow: 0 20px 60px -30px rgba(67,85,58,.35)
 }
 
 .lg h1 {
@@ -36,14 +36,14 @@
     box-sizing: border-box;
     margin-top: 4px;
     padding: 10px 14px;
-    border: 1px solid rgba(232, 102, 139, .4);
+    border: 1px solid rgba(104,124,82,.4);
     border-radius: 12px;
     font: inherit
 }
 
 .lg input:focus-visible,
 .lg button:focus-visible {
-    outline: 2px solid #B83A63;
+    outline: 2px solid #687C52;
     outline-offset: 2px
 }
 
@@ -51,7 +51,7 @@
     width: 100%;
     border: 0;
     border-radius: 999px;
-    background: #B83A63;
+    background: #687C52;
     color: #fff;
     padding: 12px;
     font: inherit;
@@ -85,5 +85,7 @@
 }
 
 .lg .alt a {
-    color: #B83A63
+    color: #687C52
 }
+
+.lg h1{font-family:Georgia,"Times New Roman",serif;color:#43553A}
